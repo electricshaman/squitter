@@ -111,7 +111,7 @@ defmodule Squitter.Aircraft do
     {:ok, %{state | airspeed_type: as_type, velocity_kt: msg.as, heading: heading, vr: vr, vr_dir: vrdir, vr_src: vrsrc}}
   end
 
-  defp handle_msg(%{tc: {:airborne_pos_gnss_height, 22}}, state) do
+  defp handle_msg(%{tc: {:airborne_pos_gnss_height, _code}}, state) do
     # TODO
     {:ok, state}
   end
@@ -148,6 +148,14 @@ defmodule Squitter.Aircraft do
 
   defp handle_msg(%{tc: :aircraft_op_status, type_msg: _msg}, state) do
     # TODO
+    # The Version Number for all 1090 MHz ADS-B Messages originating for each specific
+    # ADS-B target is determined from the decoding of the Version Number subfield of the
+    # Aircraft Operational Status Message. An ADS-B Version One (1) Receiving Subsystem
+    # initially assumes that the messages conform to Version Zero (0) message formats, until or
+    # unless received Version Number data indicates otherwise. The Version Number is
+    # retained and associated with all messages from that specific target. This Version Number
+    # is used for determining the applicable message formats to be applied for the decoding of
+    # all 1090 MHz ADS-B Messages received from that target.
     {:ok, state}
   end
 

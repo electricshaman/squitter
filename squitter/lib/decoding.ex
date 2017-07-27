@@ -15,7 +15,7 @@ defmodule Squitter.Decoding do
       11 -> AllCallReply.decode(msg)
       16 -> LongAcas.decode(msg)
       17 -> ExtSquitter.decode(msg, index) # ADS-B
-      18 -> ExtSquitter.decode(msg, index)
+      18 -> ExtSquitter.decode(msg, index) # ADS-R & TIS-B
       19 -> MilExtSquitter.decode(msg)
       20 -> CommBAltitudeReply.decode(msg)
       21 -> CommBIdentityReply.decode(msg)

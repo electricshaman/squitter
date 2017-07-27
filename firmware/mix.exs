@@ -38,7 +38,7 @@ defmodule Squitter.Firmware.Mixfile do
   end
 
   def deps do
-    [{:nerves, path: "../../nerves", override: true},
+    [{:nerves, "~> 0.6.1"},
      {:squitter_web, path: "../web"},
      {:squitter, path: "../squitter"}
     ] ++
@@ -52,7 +52,7 @@ defmodule Squitter.Firmware.Mixfile do
      {:nerves_runtime, "~> 0.4"}]
   end
 
-  def system("rpi3"), do: {:nerves_system_rpi3_sdr, path: "../../nerves_systems/nerves_system_rpi3_sdr", runtime: false}
+  def system("rpi3"), do: {:nerves_system_rpi3_sdr, github: "electricshaman/nerves_system_rpi3_sdr", runtime: false}
   #def system("rpi0"), do: {:nerves_system_rpi0, ">= 0.0.0", runtime: false}
   def system(target), do: Mix.raise "Unknown MIX_TARGET: #{target}"
 
