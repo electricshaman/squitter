@@ -1,10 +1,6 @@
 MIX = mix
+CC ?= $(CROSSCOMPILE)-gcc
 CFLAGS = -g -O3 -pedantic -Wall
-
-ERLANG_PATH = $(shell erl -eval 'io:format("~s", [lists:concat([code:root_dir(), "/erts-", erlang:system_info(version), "/include"])])' -s init stop -noshell)
-CFLAGS += -I$(ERLANG_PATH)
-MODES_PATH = .
-CFLAGS += -I$(MODES_PATH)/src
 
 ifneq ($(OS),Windows_NT)
 	CFLAGS += -fPIC
@@ -14,7 +10,17 @@ ifneq ($(OS),Windows_NT)
 	endif
 endif
 
-.PHONY: all modes clean
+ifeq ($(ERL_EI_INCLUDE_DIR),)
+ERL_ROOT_DIR = $(shell erl -eval "io:format(\"~s~n\", [code:root_dir()])" -s init stop -noshell)
+ifeq ($(ERL_ROOT_DIR),)
+   $(error Could not find Erlang installation.)
+endif
+ERL_EI_INCLUDE_DIR = "$(ERL_ROOT_DIR)/usr/include"
+endif
+
+ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR)
+
+.PHONY: all clean
 
 all: priv priv/modes.so
 
@@ -22,7 +28,7 @@ priv:
 	mkdir -p priv
 
 priv/modes.so: src/modes.c
-	$(CC) $(CFLAGS) -shared $(LDFLAGS) -o $@ src/modes.c
+	$(CC) $^ -c $(ERL_CFLAGS) $(CFLAGS) -shared -o $@
 
 clean:
 	$(RM) priv/modes.so
