@@ -8,6 +8,7 @@ defmodule Squitter.Decoding.ModeS do
   def load_nifs do
     lib_path = Path.join(:code.priv_dir(:squitter), "modes")
     :erlang.load_nif(lib_path, 0)
+    :ok
   end
 
   def checksum(_msg, _bits) do

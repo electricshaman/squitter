@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "erl_nif.h"
 
-//#define DEBUG
+/* #define DEBUG */
 
 unsigned long modes_checksum_table[112] = {
 0x3935ea, 0x1c9af5, 0xf1b77e, 0x78dbbf, 0xc397db, 0x9e31e9, 0xb0e2f0, 0x587178,
@@ -35,7 +35,7 @@ unsigned long modes_checksum(unsigned char *msg, int bits) {
             crc ^= modes_checksum_table[j + offset];
     }
 
-    return crc; /* 24 bit checksum. */
+    return crc;
 }
 
 static ERL_NIF_TERM
