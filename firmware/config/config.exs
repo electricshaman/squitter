@@ -17,7 +17,6 @@ use Mix.Config
 # of this file so it overrides the configuration defined above.
 # Uncomment to use target specific configurations
 
-# import_config "#{Mix.Project.config[:target]}.exs"
 
 config :bootloader,
   init: [:nerves_runtime],
@@ -25,3 +24,5 @@ config :bootloader,
 
 # What could go wrong?
 import_config "../../web/config/config.exs"
+
+# import_config "#{Mix.Project.config[:target]}.exs"
