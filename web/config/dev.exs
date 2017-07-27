@@ -8,6 +8,7 @@ use Mix.Config
 # with brunch.io to recompile .js and .css sources.
 config :squitter_web, Squitter.Web.Endpoint,
   http: [port: 4000],
+  server: true,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,

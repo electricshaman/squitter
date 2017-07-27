@@ -39,7 +39,8 @@ defmodule Squitter.Firmware.Mixfile do
 
   def deps do
     [{:nerves, path: "../../nerves", override: true},
-     {:squitter_web, path: "../web"}
+     {:squitter_web, path: "../web"},
+     {:squitter, path: "../squitter"}
     ] ++
     deps(@target)
   end

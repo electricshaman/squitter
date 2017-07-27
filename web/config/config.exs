@@ -7,8 +7,7 @@ use Mix.Config
 
 # General application configuration
 config :squitter_web,
-  namespace: Squitter.Web,
-  ecto_repos: [Squitter.Web.Repo]
+  namespace: Squitter.Web
 
 # Configures the endpoint
 config :squitter_web, Squitter.Web.Endpoint,
@@ -20,7 +19,6 @@ config :squitter_web, Squitter.Web.Endpoint,
 
 # Configures Elixir's Logger
 config :logger, :console,
-  format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
 config :squitter_web, :generators,

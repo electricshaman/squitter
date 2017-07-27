@@ -3,7 +3,7 @@ defmodule Squitter do
   Documentation for Squitter.
   """
 
-  def all_aircraft do
+  def report do
     call_aircraft(:report)
     |> Enum.map(fn {:ok, a} -> a end)
     |> Enum.sort_by(fn a -> a.age end)

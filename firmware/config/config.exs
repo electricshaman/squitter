@@ -25,4 +25,7 @@ config :bootloader,
 # What could go wrong?
 import_config "../../web/config/config.exs"
 
+config :squitter_web, Squitter.Web.Endpoint,
+  code_reloader: false
+
 # import_config "#{Mix.Project.config[:target]}.exs"
