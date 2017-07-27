@@ -15,10 +15,10 @@ defmodule Squitter.Firmware.Mixfile do
      elixir: "~> 1.4.0",
      target: @target,
      archives: [nerves_bootstrap: "~> 0.4"],
-     deps_path: "../../deps/#{@target}",
-     build_path: "../../_build/#{@target}",
-     config_path: "../../config/config.exs",
-     lockfile: "../../mix.lock.#{@target}",
+     deps_path: "deps/#{@target}",
+     build_path: "_build/#{@target}",
+     config_path: "config/config.exs",
+     lockfile: "mix.lock.#{@target}",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      aliases: aliases(@target),
@@ -28,15 +28,19 @@ defmodule Squitter.Firmware.Mixfile do
   def application, do: application(@target)
 
   def application("host") do
-    [extra_applications: [:logger]]
+    [mod: {Squitter.Firmware.Application, []},
+     extra_applications: [:logger]]
   end
+
   def application(_target) do
     [mod: {Squitter.Firmware.Application, []},
      extra_applications: [:logger]]
   end
 
   def deps do
-    [{:nerves, "~> 0.6", runtime: false}] ++
+    [{:nerves, path: "../../nerves", override: true},
+     {:squitter_web, path: "../web"}
+    ] ++
     deps(@target)
   end
 
@@ -47,7 +51,7 @@ defmodule Squitter.Firmware.Mixfile do
      {:nerves_runtime, "~> 0.4"}]
   end
 
-  def system("rpi3"), do: {:nerves_system_rpi3_sdr, path: "../../../nerves_systems/nerves_system_rpi3_sdr", runtime: false}
+  def system("rpi3"), do: {:nerves_system_rpi3_sdr, path: "../../nerves_systems/nerves_system_rpi3_sdr", runtime: false}
   #def system("rpi0"), do: {:nerves_system_rpi0, ">= 0.0.0", runtime: false}
   def system(target), do: Mix.raise "Unknown MIX_TARGET: #{target}"
 

@@ -22,3 +22,6 @@ use Mix.Config
 config :bootloader,
   init: [:nerves_runtime],
   app: :squitter_firmware
+
+# What could go wrong?
+import_config "../../web/config/config.exs"

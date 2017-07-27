@@ -1,0 +1,3 @@
+%{"elixir_make": {:hex, :elixir_make, "0.4.0", "992f38fabe705bb45821a728f20914c554b276838433349d4f2341f7a687cddf", [], [], "hexpm"},
+  "gen_stage": {:hex, :gen_stage, "0.12.1", "63899782173e4d9247f0a2f697a1cd72c3f255267d84449c56138f8514733103", [], [], "hexpm"},
+  "ringbuffer": {:git, "https://github.com/electricshaman/elixir-ringbuffer.git", "1b324d318d201f7f10e14b63852d734c9843b95a", []}}

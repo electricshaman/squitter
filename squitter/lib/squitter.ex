@@ -14,10 +14,6 @@ defmodule Squitter do
     cast_aircraft(request)
   end
 
-  def toggle_debug_mode do
-    cast_aircraft(:debug)
-  end
-
   defp call_aircraft(request) do
     aircraft_pids()
     |> Enum.map(fn pid -> GenServer.call(pid, request) end)

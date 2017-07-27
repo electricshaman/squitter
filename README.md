@@ -1,4 +1,0 @@
-# Squitter
-
-**TODO: Add description**
-
