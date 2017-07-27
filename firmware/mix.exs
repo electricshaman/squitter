@@ -38,7 +38,7 @@ defmodule Squitter.Firmware.Mixfile do
   end
 
   def deps do
-    [{:nerves, "~> 0.6.1"},
+    [{:nerves, github: "nerves-project/nerves", override: true},
      {:squitter_web, path: "../web"},
      {:squitter, path: "../squitter"}
     ] ++
