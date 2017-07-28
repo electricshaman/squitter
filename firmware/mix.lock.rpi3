@@ -8,7 +8,7 @@
   "gen_stage": {:hex, :gen_stage, "0.12.1", "63899782173e4d9247f0a2f697a1cd72c3f255267d84449c56138f8514733103", [:mix], []},
   "gettext": {:hex, :gettext, "0.13.1", "5e0daf4e7636d771c4c71ad5f3f53ba09a9ae5c250e1ab9c42ba9edccc476263", [:mix], []},
   "mime": {:hex, :mime, "1.1.0", "01c1d6f4083d8aa5c7b8c246ade95139620ef8effb009edde934e0ec3b28090a", [:mix], []},
-  "nerves": {:git, "https://github.com/nerves-project/nerves.git", "ab014faa8b74fc51fbf6caf12fe92d2945234813", []},
+  "nerves": {:hex, :nerves, "0.7.0", "a82952fe4bce7429e807740865694b7d1c4f1baa3461c8c196141ecdaa305f89", [:mix], [{:distillery, "~> 1.4", [hex: :distillery, repo: "hexpm", optional: false]}], "hexpm"},
   "nerves_runtime": {:hex, :nerves_runtime, "0.4.2", "aff110c7ca2f424bcbdc869f0ef9881ccfdd3c2c2e21a59d1343f3195d1adf8b", [:make, :mix], [{:elixir_make, "~> 0.4", [hex: :elixir_make, optional: false]}, {:system_registry, "~> 0.3", [hex: :system_registry, optional: false]}]},
   "nerves_system_br": {:hex, :nerves_system_br, "0.13.3", "e5baa39be76646437a8e917e8bf1b3d41f6ef637c2806b500dade9aabdc9ae81", [:mix], []},
   "nerves_system_rpi3_sdr": {:git, "https://github.com/electricshaman/nerves_system_rpi3_sdr.git", "eb277739d12a3ffe4817e98bf10719fcdd321223", []},
@@ -22,5 +22,5 @@
   "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], []},
   "poolboy": {:hex, :poolboy, "1.5.1", "6b46163901cfd0a1b43d692657ed9d7e599853b3b21b95ae5ae0a777cf9b6ca8", [:rebar], []},
   "ranch": {:hex, :ranch, "1.3.2", "e4965a144dc9fbe70e5c077c65e73c57165416a901bd02ea899cfd95aa890986", [:rebar3], []},
-  "ringbuffer": {:git, "https://github.com/electricshaman/elixir-ringbuffer.git", "1b324d318d201f7f10e14b63852d734c9843b95a", []},
+  "ringbuffer": {:git, "https://github.com/electricshaman/elixir-ringbuffer.git", "7792cc5288d7e02a0a24a1258bb88584551fa5fb", []},
   "system_registry": {:hex, :system_registry, "0.4.0", "d8a7267005418efd8291df327153ae6f11badcb7a8827dd00ed59dc9abb3f9a6", [:mix], []}}
