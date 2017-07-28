@@ -12,7 +12,7 @@ defmodule Squitter.Firmware.Mixfile do
   def project do
     [app: :squitter_firmware,
      version: "0.1.0",
-     elixir: "~> 1.4.0",
+     elixir: "~> 1.5",
      target: @target,
      archives: [nerves_bootstrap: "~> 0.4"],
      deps_path: "deps/#{@target}",
