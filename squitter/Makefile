@@ -1,6 +1,6 @@
-MIX = mix
+LDFLAGS ?=
+CFLAGS = -O3 -pedantic -Wall
 CC ?= $(CROSSCOMPILE)-gcc
-CFLAGS = -g -O3 -pedantic -Wall
 
 ifneq ($(OS),Windows_NT)
 	CFLAGS += -fPIC
@@ -10,25 +10,25 @@ ifneq ($(OS),Windows_NT)
 	endif
 endif
 
-ifeq ($(ERL_EI_INCLUDE_DIR),)
+ifeq ($(ERL_INCLUDE_DIR),)
 ERL_ROOT_DIR = $(shell erl -eval "io:format(\"~s~n\", [code:root_dir()])" -s init stop -noshell)
 ifeq ($(ERL_ROOT_DIR),)
    $(error Could not find Erlang installation.)
 endif
-ERL_EI_INCLUDE_DIR = "$(ERL_ROOT_DIR)/usr/include"
+ERL_INCLUDE_DIR = "$(ERL_ROOT_DIR)/usr/include"
 endif
 
-ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR)
+ERL_CFLAGS ?= -I$(ERL_INCLUDE_DIR)
 
 .PHONY: all clean
 
-all: priv priv/modes.so
+all: clean priv priv/modes.so
 
 priv:
 	mkdir -p priv
 
 priv/modes.so: src/modes.c
-	$(CC) $^ -c $(ERL_CFLAGS) $(CFLAGS) -shared -o $@
+	$(CC) $^ $(ERL_CFLAGS) $(CFLAGS) -shared -o $@
 
 clean:
 	$(RM) priv/modes.so
