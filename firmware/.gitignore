@@ -10,3 +10,4 @@
 
 # Generate on crash by the VM
 erl_crash.dump
+env.sh
