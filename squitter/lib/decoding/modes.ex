@@ -1,14 +1,19 @@
 defmodule Squitter.Decoding.ModeS do
-  @on_load :load_nifs
-
   require Logger
   use Bitwise, only_operators: true
   import Squitter.Decoding.Utils
 
-  def load_nifs do
-    lib_path = Path.join(:code.priv_dir(:squitter), "modes")
-    :erlang.load_nif(lib_path, 0)
-    :ok
+  @on_load :load_nif
+  @app     Mix.Project.config[:app]
+  @compile {:autoload, false}
+
+  def load_nif do
+    so_path = Path.join(:code.priv_dir(@app), "modes")
+    case :erlang.load_nif(so_path, 0) do
+      :ok -> :ok
+      {:error, {_reason, msg}} = error ->
+        Logger.warn("Unable to load ModeS NIF: #{to_string(msg)}")
+    end
   end
 
   def checksum(_msg, _bits) do
