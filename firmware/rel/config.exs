@@ -35,5 +35,7 @@ release :squitter_firmware do
     set include_system_libs: System.get_env("ERL_SYSTEM_LIB_DIR")
     set vm_args: "rel/vm.args"
   end
+
+  plugin Bootloader.Plugin
 end
 

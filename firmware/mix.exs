@@ -22,7 +22,7 @@ defmodule Squitter.Firmware.Mixfile do
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      aliases: aliases(@target),
-     deps: deps()]
+     deps: List.flatten(deps())]
   end
 
   def application, do: application(@target)
@@ -39,17 +39,22 @@ defmodule Squitter.Firmware.Mixfile do
 
   def deps do
     [{:nerves, "~> 0.7.0"},
+     {:nerves_firmware_ssh, github: "fhunleth/nerves_firmware_ssh"},
      {:squitter_web, path: "../web"},
-     {:squitter, path: "../squitter"}] ++ deps(@target)
+     {:squitter, path: "../squitter"},
+     deps(@target)]
   end
 
   def deps("host"), do: []
   def deps(target) do
     [system(target),
      {:bootloader, "~> 0.1"},
+     {:nerves_network, "~> 0.3.0"},
+     {:nerves_init_net_kernel, github: "mobileoverlord/nerves_init_net_kernel", tag: "v0.1.0"},
      {:nerves_runtime, "~> 0.4"}]
   end
 
+  # TODO: Put this on Hex and provide an artifact.
   def system("rpi3"), do: {:nerves_system_rpi3_sdr, github: "electricshaman/nerves_system_rpi3_sdr", runtime: false}
   #def system("rpi0"), do: {:nerves_system_rpi0, ">= 0.0.0", runtime: false}
   def system(target), do: Mix.raise "Unknown MIX_TARGET: #{target}"
