@@ -1,1 +1,31 @@
-/* This file is for your main application css. */
+.page-header {
+  margin-top: 0;
+}
+
+#menu {
+  background-color: #24292e;
+  margin-bottom: 0;
+  border-radius: 0;
+  border: 0;
+}
+
+#menu a {
+  color: rgba(255,255,255,0.75);
+  line-height: 35px;
+  font-weight: 500;
+}
+
+.head {
+  padding-top: 20px;
+  background-color: #fafbfc;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.head .nav-tabs {
+  border-bottom: 0;
+}
+
+.navbar-brand img {
+  width: 35px;
+  height: 35px;
+}
