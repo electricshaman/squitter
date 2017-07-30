@@ -21,7 +21,7 @@ defmodule Squitter.Decoding do
       21 -> CommBIdentityReply.decode(msg)
       22 -> MilExtSquitter.decode(msg)
       24 -> CommDElm.decode(msg)
-      _  -> %Unknown{df: df, msg: msg}
+      _  -> %{df: df, msg: msg}
     end
   end
 end
