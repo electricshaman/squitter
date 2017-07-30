@@ -2,7 +2,7 @@ defmodule Squitter.Web.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "room:*", Squitter.Web.RoomChannel
+  channel "aircraft:*", Squitter.Web.AircraftChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
