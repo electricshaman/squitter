@@ -24,6 +24,7 @@ defmodule Squitter.Mixfile do
   defp deps do
     [{:gen_stage, "~> 0.11"},
      {:elixir_make, "~> 0.4", runtime: false},
-     {:ringbuffer, github: "electricshaman/elixir-ringbuffer"}]
+     {:ringbuffer, github: "electricshaman/elixir-ringbuffer"},
+     {:phoenix_pubsub, "~> 1.0"}]
   end
 end

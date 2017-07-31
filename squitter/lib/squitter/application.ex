@@ -9,6 +9,7 @@ defmodule Squitter.Application do
     :pg2.create(:aircraft)
 
     children = [
+      supervisor(Phoenix.PubSub.PG2, [Squitter.PubSub, []]),
       registry_supervisor(Squitter.AircraftRegistry, :unique),
       worker(Squitter.StatTracker, [10000]),
       supervisor(Squitter.AircraftSupervisor, []),

@@ -10,6 +10,7 @@ defmodule Squitter.Aircraft do
 
   @timeout_period_s   60
   @age_cycle_s        1
+  @broadcast_topic    "aircraft"
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
@@ -44,6 +45,9 @@ defmodule Squitter.Aircraft do
 
   def handle_cast({:dispatch, msg}, state) do
     {:ok, new_state} = handle_msg(msg, state)
+
+    _ = broadcast_report(new_state)
+
     {:noreply, set_received(new_state)}
   end
 
@@ -56,20 +60,7 @@ defmodule Squitter.Aircraft do
   end
 
   def handle_call(:report, _from, state) do
-    reply = state
-            |> Map.take([
-              :callsign,
-              :msgs,
-              :aircraft_cat,
-              :altitude,
-              :velocity_kt,
-              :heading,
-              :vr,
-              :vr_dir,
-              :address,
-              :age])
-            |> Map.put(:position, {state.lat, state.lon})
-
+    reply = build_report(state)
     {:reply, {:ok, reply}, state}
   end
 
@@ -177,6 +168,18 @@ defmodule Squitter.Aircraft do
   defp handle_msg(other, state) do
     Logger.warn "Unhandled msg in #{state.address}: #{inspect other}"
     {:ok, state}
+  end
+
+  defp broadcast_report(state) do
+    report = build_report(state)
+    Phoenix.PubSub.broadcast!(Squitter.PubSub, @broadcast_topic, report)
+  end
+
+  defp build_report(state) do
+    state
+    |> Map.take([:callsign, :msgs, :aircraft_cat, :altitude, :velocity_kt,
+      :heading, :vr, :vr_dir, :address, :age])
+    |> Map.put(:position, {state.lat, state.lon})
   end
 
   def calculate_vector(msg) do
