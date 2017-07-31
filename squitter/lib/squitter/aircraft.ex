@@ -204,11 +204,32 @@ defmodule Squitter.Aircraft do
   end
 
   def calculate_vertical_rate(msg) do
-    vr = (msg.vr - 1) * 64
-    vr_dir = if msg.sign_vr, do: :down, else: :up
-    vrsrc = if msg.vrsrc, do: :geometric, else: :baro
+    vr = vr(msg)
+    vr_dir = vr_dir(msg)
+    vrsrc = vr_src(msg)
     {vr, vr_dir, vrsrc}
   end
+
+  def vr(%{vr: vr}),
+    do: if vr == 0, do: :na, else: (vr - 1) * 64
+  def vr(_other),
+    do: :error
+
+  def vr_dir(%{vr: vr, sign_vr: sign_vr}) do
+    cond do
+      vr == 1 -> :none
+      sign_vr == 0 -> :up
+      sign_vr == 1 -> :down
+      true -> :na
+    end
+  end
+  def vr_dir(_other),
+    do: :error
+
+  def vr_src(%{vrsrc: vrsrc}),
+    do: if vrsrc == 0, do: :geo, else: :baro
+  def vr_src(_other),
+    do: :error
 
   @cpr_max :math.pow(2, 17)
 
