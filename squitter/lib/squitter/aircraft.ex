@@ -24,19 +24,23 @@ defmodule Squitter.Aircraft do
     {:ok, %{
       address: address,
       msgs: 0,
-      aircraft_cat: :unknown,
-      altitude: nil,
+      category: %{set: :unknown, category: :unknown},
+      country: "",
+      altitude: 0,
       callsign: "",
-      lat: nil,
-      lon: nil,
+      lat: 0.0,
+      lon: 0.0,
       even_pos: nil,
       odd_pos: nil,
-      velocity_kt: nil,
+      velocity_kt: 0,
       airspeed_type: nil,
       heading: nil,
-      vr: nil,
-      vr_dir: nil,
+      vr: 0,
+      vr_dir: :na,
       vr_src: nil,
+      registration: "",
+      squawk: "",
+      distance: 0.0,
       position_history: [],
       timeout_enabled: true,
       last_received: System.monotonic_time(:seconds),
@@ -70,7 +74,7 @@ defmodule Squitter.Aircraft do
   end
 
   defp handle_msg(%{tc: {:aircraft_id, _}, type_msg: %{aircraft_cat: cat, callsign: callsign}}, state) do
-    {:ok, %{state | aircraft_cat: cat, callsign: callsign}}
+    {:ok, %{state | category: cat, callsign: callsign}}
   end
 
   # position with even flag
@@ -177,9 +181,9 @@ defmodule Squitter.Aircraft do
 
   defp build_report(state) do
     state
-    |> Map.take([:callsign, :msgs, :aircraft_cat, :altitude, :velocity_kt,
-      :heading, :vr, :vr_dir, :address, :age])
-    |> Map.put(:position, {state.lat, state.lon})
+    |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
+      :heading, :vr, :vr_dir, :address, :age, :distance, :country])
+    |> Map.put(:position, %{lat: state.lat, lon: state.lon})
   end
 
   def calculate_vector(msg) do
@@ -200,7 +204,7 @@ defmodule Squitter.Aircraft do
 
     h = if h < 0, do: h + 360, else: h
 
-    {Float.round(v, 2), Float.round(h, 2)}
+    {:erlang.trunc(v), :erlang.trunc(h)}
   end
 
   def calculate_vertical_rate(msg) do

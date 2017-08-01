@@ -1,12 +1,17 @@
 module App exposing (..)
 
+import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Phoenix.Socket
-import Phoenix.Channel
-import Phoenix.Push
-import Json.Encode exposing (..)
-import Json.Decode exposing (..)
+import Json.Encode as JE
+import Json.Decode as JD exposing (..)
+import Json.Decode.Pipeline as JDP exposing (decode, required, optional, hardcoded)
+import Phoenix
+import Phoenix.Channel as Channel exposing (Channel)
+import Phoenix.Socket as Socket exposing (Socket, AbnormalClose)
+import Phoenix.Push as Push
+import Time exposing (Time)
+import Dict exposing (Dict)
 
 
 main =
@@ -18,49 +23,59 @@ main =
         }
 
 
+type alias AircraftCategory =
+    { set : String
+    , category : String
+    }
+
+
+type alias AircraftPosition =
+    { lat : Float
+    , lon : Float
+    }
+
+
 type alias Aircraft =
-    { icao : String
+    { address : String
     , callsign : String
     , country : String
     , registration : String
     , squawk : String
     , altitude : Int
-    , vr : Float
-    , distance : Float
-    , speed : Int
+    , vr : Int
+    , vr_dir : String
+    , velocity_kt : Int
+    , category : AircraftCategory
     , heading : Int
-    , latitude : Float
-    , longitude : Float
-    , messages : Int
+    , position : AircraftPosition
+    , distance : Float
+    , msgs : Int
     , age : Int
     }
 
 
 type alias Model =
-    { aircraft : List Aircraft
-    , socket : Phoenix.Socket.Socket Msg
+    { aircraft : Dict String Aircraft
     }
 
 
 type Msg
     = None
-    | PhoenixMsg (Phoenix.Socket.Msg Msg)
-    | ReceiveAircraft Json.Encode.Value
+    | AircraftReport JD.Value
+
+
+socket =
+    Socket.init "ws://localhost:4000/socket/websocket"
+
+
+channel =
+    Channel.init "aircraft:reports"
+        |> Channel.on "report" AircraftReport
 
 
 init : ( Model, Cmd Msg )
 init =
-    let
-        socket =
-            Phoenix.Socket.init "ws://endeavour.local:4000/socket/websocket"
-                |> Phoenix.Socket.withDebug
-                |> Phoenix.Socket.on "new:msg"
-                    "rooms:lobby"
-                    ReceiveAircraft
-                    Phoenix.Channel.init
-                    "rooms:lobby"
-    in
-        ( Model [] socket, Cmd.none )
+    ( Model Dict.empty, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -69,14 +84,53 @@ update msg model =
         None ->
             ( model, Cmd.none )
 
-        PhoenixMsg msg ->
-            let
-                ( socket, phxCmd ) =
-                    Phoenix.Socket.update msg model.socket
-            in
-                ( { model | socket = socket }
-                , Cmd.map PhoenixMsg phxCmd
-                )
+        AircraftReport msg ->
+            case JD.decodeValue decodeAircraft msg of
+                Ok msg ->
+                    ( { model | aircraft = Dict.insert msg.address msg model.aircraft }, Cmd.none )
+
+                Err err ->
+                    Debug.log err
+                        ( model, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Phoenix.connect socket [ channel ]
+
+
+decodeAircraft : Decoder Aircraft
+decodeAircraft =
+    decode Aircraft
+        |> JDP.required "address" string
+        |> JDP.required "callsign" string
+        |> JDP.required "country" string
+        |> JDP.required "registration" string
+        |> JDP.required "squawk" string
+        |> JDP.optional "altitude" int 0
+        |> JDP.optional "vr" int 0
+        |> JDP.optional "vr_dir" string ""
+        |> JDP.optional "velocity_kt" int 0
+        |> JDP.required "category" decodeCategory
+        |> JDP.optional "heading" int 0
+        |> JDP.required "position" decodePosition
+        |> JDP.required "distance" float
+        |> JDP.required "msgs" int
+        |> JDP.required "age" int
+
+
+decodeCategory : Decoder AircraftCategory
+decodeCategory =
+    decode AircraftCategory
+        |> JDP.required "set" string
+        |> JDP.required "category" string
+
+
+decodePosition : Decoder AircraftPosition
+decodePosition =
+    decode AircraftPosition
+        |> JDP.optional "lat" float 0.0
+        |> JDP.optional "lon" float 0.0
 
 
 view : Model -> Html Msg
@@ -104,31 +158,26 @@ view model =
                     ]
                 ]
             , tbody []
-                (List.map aircraftRow model.aircraft)
+                (List.map aircraftRow (Dict.values model.aircraft))
             ]
         ]
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Phoenix.Socket.listen model.socket PhoenixMsg
 
 
 aircraftRow : Aircraft -> Html msg
 aircraftRow aircraft =
     tr []
-        [ td [] [ text aircraft.icao ]
+        [ td [] [ text aircraft.address ]
         , td [] [ text aircraft.country ]
         , td [] [ text aircraft.registration ]
         , td [] [ text aircraft.callsign ]
         , td [] [ text aircraft.squawk ]
         , td [] [ text (toString aircraft.altitude) ]
-        , td [] [ text (toString aircraft.speed) ]
+        , td [] [ text (toString aircraft.velocity_kt) ]
         , td [] [ text (toString aircraft.vr) ]
         , td [] [ text (toString aircraft.distance) ]
         , td [] [ text (toString aircraft.heading) ]
-        , td [] [ text (toString aircraft.latitude) ]
-        , td [] [ text (toString aircraft.longitude) ]
-        , td [] [ text (toString aircraft.messages) ]
+        , td [] [ text (toString aircraft.position.lat) ]
+        , td [] [ text (toString aircraft.position.lon) ]
+        , td [] [ text (toString aircraft.msgs) ]
         , td [] [ text (toString aircraft.age) ]
         ]

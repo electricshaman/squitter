@@ -31,10 +31,27 @@ config :nerves_init_net_kernel,
   iface: "wlan0",
   name: "squitter"
 
-# What could go wrong? :trollface:
-import_config "../../web/config/config.exs"
+config :squitter_web,
+  namespace: Squitter.Web
+
+# Configures the endpoint
+config :squitter_web, Squitter.Web.Endpoint,
+  url: [host: "localhost"],
+  secret_key_base: "hurfAocg0W/AItXGaWvb4OFBrnopF5LdrakN8hLpgNiou63rSymOb9DPe+siVlzi",
+  render_errors: [view: Squitter.Web.ErrorView, accepts: ~w(html json)],
+  pubsub: [name: Squitter.PubSub,
+           adapter: Phoenix.PubSub.PG2]
 
 config :squitter_web, Squitter.Web.Endpoint,
-  code_reloader: false
+  http: [port: 4000],
+  server: true,
+  debug_errors: true,
+  code_reloader: true,
+  check_origin: false,
+  watchers: [node: ["node_modules/brunch/bin/brunch", "watch", "--stdin",
+                    cd: Path.expand("../../web/assets", __DIR__)]]
+
+config :squitter,
+  start_pubsub: false # Web will provide it
 
 # import_config "#{Mix.Project.config[:target]}.exs"

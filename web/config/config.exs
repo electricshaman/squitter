@@ -14,7 +14,7 @@ config :squitter_web, Squitter.Web.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "hurfAocg0W/AItXGaWvb4OFBrnopF5LdrakN8hLpgNiou63rSymOb9DPe+siVlzi",
   render_errors: [view: Squitter.Web.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: Squitter.Web.PubSub,
+  pubsub: [name: Squitter.PubSub,
            adapter: Phoenix.PubSub.PG2]
 
 # Configures Elixir's Logger

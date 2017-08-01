@@ -28,7 +28,7 @@ defmodule Squitter.Decoding.ExtSquitter.AircraftCategory do
       7 -> :rotorcraft
       _ -> :error
     end
-    {:standard, value}
+    %{set: :standard, category: value}
   end
 
   defp decode_set_b(category) do
@@ -43,7 +43,7 @@ defmodule Squitter.Decoding.ExtSquitter.AircraftCategory do
       7 -> :space_vehicle
       _ -> :error
     end
-    {:non_standard, value}
+    %{set: :non_standard, category: value}
   end
 
   defp decode_set_c(category) do
@@ -58,13 +58,14 @@ defmodule Squitter.Decoding.ExtSquitter.AircraftCategory do
       7 -> :reserved
       _ -> :error
     end
-    {:surface, value}
+    %{set: :surface, category: value}
   end
 
   defp decode_set_d(category) do
     value = case category do
+      0 -> :na
       _ -> :reserved
     end
-    {:reserved, value}
+    %{set: :reserved, category: value}
   end
 end
