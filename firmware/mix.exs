@@ -38,7 +38,7 @@ defmodule Squitter.Firmware.Mixfile do
   end
 
   def deps do
-    [{:nerves, "~> 0.7.0"},
+    [{:nerves, "~> 0.7"},
      {:nerves_firmware_ssh, github: "fhunleth/nerves_firmware_ssh"},
      {:squitter_web, path: "../web"},
      {:squitter, path: "../squitter"},
