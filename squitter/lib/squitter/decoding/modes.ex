@@ -11,7 +11,7 @@ defmodule Squitter.Decoding.ModeS do
     so_path = Path.join(:code.priv_dir(@app), "modes")
     case :erlang.load_nif(so_path, 0) do
       :ok -> :ok
-      {:error, {_reason, msg}} = error ->
+      {:error, {_reason, msg}} ->
         Logger.warn("Unable to load ModeS NIF: #{to_string(msg)}")
     end
   end

@@ -26,8 +26,8 @@
           </a>
         </div>
         <ul class="nav navbar-nav">
-          <li><a href="/">Aircraft List</a></li>
-          <li><a href="#">Live Traffic Map</a></li>
+          <li><a href="/">Aircraft</a></li>
+          <li><a href="#">Live Map</a></li>
           <li><a href="#">Stats</a></li>
         </ul>
       </div>

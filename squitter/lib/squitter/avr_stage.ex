@@ -3,7 +3,7 @@ defmodule Squitter.AvrTcpStage do
 
   require Logger
 
-  alias Squitter.{AVR, Decoding}
+  alias Squitter.AVR
 
   def start_link(host, port) do
     Logger.debug "Starting up #{__MODULE__}"
