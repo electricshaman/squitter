@@ -4,16 +4,10 @@ defmodule Squitter.Web.AircraftChannel do
   require Logger
 
   def join("aircraft:" <> _key, payload, socket) do
-    Phoenix.PubSub.subscribe(Squitter.PubSub, "aircraft")
     {:ok, socket}
   end
 
   def handle_in(other, payload, socket) do
-    {:noreply, socket}
-  end
-
-  def handle_info(msg, socket) do
-    push(socket, "report", msg)
     {:noreply, socket}
   end
 end

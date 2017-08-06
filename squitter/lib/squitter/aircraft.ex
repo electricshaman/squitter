@@ -9,8 +9,7 @@ defmodule Squitter.Aircraft do
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @timeout_period_s   60
-  @age_cycle_s        1
-  @broadcast_topic    "aircraft"
+  @clock_s        1
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
@@ -19,7 +18,7 @@ defmodule Squitter.Aircraft do
   def init([address]) do
     :pg2.join(:aircraft, self())
 
-    schedule_next_age_cycle()
+    schedule_tick()
 
     {:ok, %{
       address: address,
@@ -50,7 +49,7 @@ defmodule Squitter.Aircraft do
   def handle_cast({:dispatch, msg}, state) do
     {:ok, new_state} = handle_msg(msg, state)
 
-    _ = broadcast_report(new_state)
+    broadcast(:report, build_report(state))
 
     {:noreply, set_received(new_state)}
   end
@@ -172,11 +171,6 @@ defmodule Squitter.Aircraft do
   defp handle_msg(other, state) do
     Logger.warn "Unhandled msg in #{state.address}: #{inspect other}"
     {:ok, state}
-  end
-
-  defp broadcast_report(state) do
-    report = build_report(state)
-    Phoenix.PubSub.broadcast!(Squitter.PubSub, @broadcast_topic, report)
   end
 
   defp build_report(state) do
@@ -317,12 +311,14 @@ defmodule Squitter.Aircraft do
     nl(lat_even) == nl(lat_odd)
   end
 
-  def handle_info(:age_cycle, state) do
+  def handle_info(:tick, state) do
     new_state = set_age(state)
     if state.timeout_enabled && timeout_expired?(new_state) do
+      broadcast(:timeout, %{address: state.address})
       {:stop, {:shutdown, :timed_out}, new_state}
     else
-      schedule_next_age_cycle()
+      broadcast(:age, %{address: state.address, age: state.age})
+      schedule_tick()
       {:noreply, new_state}
     end
   end
@@ -332,10 +328,15 @@ defmodule Squitter.Aircraft do
   end
 
   def terminate(reason, state) do
+    broadcast(:terminated, %{address: state.address})
     Logger.debug "Aircraft #{state.address} process terminated due to reason #{inspect reason}"
   end
 
   # Private helpers
+
+  defp broadcast(type, msg) when is_atom(type) do
+    Squitter.ReportCollector.report({type, msg})
+  end
 
   defp timeout_expired?(%{age: age}) do
     age > @timeout_period_s
@@ -351,8 +352,8 @@ defmodule Squitter.Aircraft do
     %{state | age: now - last}
   end
 
-  defp schedule_next_age_cycle do
-    Process.send_after(self(), :age_cycle, @age_cycle_s * 1000)
+  defp schedule_tick do
+    Process.send_after(self(), :tick, @clock_s * 1000)
   end
 
 end

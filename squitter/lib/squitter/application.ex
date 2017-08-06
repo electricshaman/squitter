@@ -2,14 +2,17 @@ defmodule Squitter.Application do
   @moduledoc false
 
   use Application
+  require Logger
+
   import Supervisor.Spec, warn: false
 
   def start(_type, _args) do
+    Logger.debug "Squitter application starting"
 
     :pg2.create(:aircraft)
 
     children = [
-      pubsub(),
+      worker(Squitter.ReportCollector, []),
       registry_supervisor(Squitter.AircraftRegistry, :unique),
       worker(Squitter.StatTracker, [10000]),
       supervisor(Squitter.AircraftSupervisor, []),
