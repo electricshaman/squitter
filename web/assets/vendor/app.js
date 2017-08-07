@@ -8827,121 +8827,6 @@ var _elm_lang$html$Html_Attributes$classList = function (list) {
 };
 var _elm_lang$html$Html_Attributes$style = _elm_lang$virtual_dom$VirtualDom$style;
 
-var _elm_lang$html$Html_Events$keyCode = A2(_elm_lang$core$Json_Decode$field, 'keyCode', _elm_lang$core$Json_Decode$int);
-var _elm_lang$html$Html_Events$targetChecked = A2(
-	_elm_lang$core$Json_Decode$at,
-	{
-		ctor: '::',
-		_0: 'target',
-		_1: {
-			ctor: '::',
-			_0: 'checked',
-			_1: {ctor: '[]'}
-		}
-	},
-	_elm_lang$core$Json_Decode$bool);
-var _elm_lang$html$Html_Events$targetValue = A2(
-	_elm_lang$core$Json_Decode$at,
-	{
-		ctor: '::',
-		_0: 'target',
-		_1: {
-			ctor: '::',
-			_0: 'value',
-			_1: {ctor: '[]'}
-		}
-	},
-	_elm_lang$core$Json_Decode$string);
-var _elm_lang$html$Html_Events$defaultOptions = _elm_lang$virtual_dom$VirtualDom$defaultOptions;
-var _elm_lang$html$Html_Events$onWithOptions = _elm_lang$virtual_dom$VirtualDom$onWithOptions;
-var _elm_lang$html$Html_Events$on = _elm_lang$virtual_dom$VirtualDom$on;
-var _elm_lang$html$Html_Events$onFocus = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'focus',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onBlur = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'blur',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onSubmitOptions = _elm_lang$core$Native_Utils.update(
-	_elm_lang$html$Html_Events$defaultOptions,
-	{preventDefault: true});
-var _elm_lang$html$Html_Events$onSubmit = function (msg) {
-	return A3(
-		_elm_lang$html$Html_Events$onWithOptions,
-		'submit',
-		_elm_lang$html$Html_Events$onSubmitOptions,
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onCheck = function (tagger) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'change',
-		A2(_elm_lang$core$Json_Decode$map, tagger, _elm_lang$html$Html_Events$targetChecked));
-};
-var _elm_lang$html$Html_Events$onInput = function (tagger) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'input',
-		A2(_elm_lang$core$Json_Decode$map, tagger, _elm_lang$html$Html_Events$targetValue));
-};
-var _elm_lang$html$Html_Events$onMouseOut = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'mouseout',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onMouseOver = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'mouseover',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onMouseLeave = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'mouseleave',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onMouseEnter = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'mouseenter',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onMouseUp = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'mouseup',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onMouseDown = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'mousedown',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onDoubleClick = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'dblclick',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$onClick = function (msg) {
-	return A2(
-		_elm_lang$html$Html_Events$on,
-		'click',
-		_elm_lang$core$Json_Decode$succeed(msg));
-};
-var _elm_lang$html$Html_Events$Options = F2(
-	function (a, b) {
-		return {stopPropagation: a, preventDefault: b};
-	});
-
 var _elm_lang$navigation$Native_Navigation = function() {
 
 
@@ -12153,6 +12038,34 @@ var _user$project$App$socket = function (location) {
 			'ws://',
 			A2(_elm_lang$core$Basics_ops['++'], host, '/socket/websocket')));
 };
+var _user$project$App$defaultAircraft = {
+	address: '',
+	callsign: '',
+	country: '',
+	registration: '',
+	squawk: '',
+	altitude: 0,
+	vr: 0,
+	vr_dir: '',
+	velocity_kt: 0,
+	category: {set: '', category: ''},
+	heading: 0,
+	position: {lat: 0.0, lon: 0.0},
+	distance: 0.0,
+	msgs: 0,
+	age: 0
+};
+var _user$project$App$Model = F2(
+	function (a, b) {
+		return {aircraft: a, location: b};
+	});
+var _user$project$App$init = function (location) {
+	return {
+		ctor: '_Tuple2',
+		_0: A2(_user$project$App$Model, _elm_lang$core$Dict$empty, location),
+		_1: _elm_lang$core$Platform_Cmd$none
+	};
+};
 var _user$project$App$AircraftCategory = F2(
 	function (a, b) {
 		return {set: a, category: b};
@@ -12181,6 +12094,19 @@ var _user$project$App$decodePosition = A4(
 		_elm_lang$core$Json_Decode$float,
 		0.0,
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$AircraftPosition)));
+var _user$project$App$AircraftAge = F2(
+	function (a, b) {
+		return {address: a, age: b};
+	});
+var _user$project$App$decodeAge = A3(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+	'age',
+	_elm_lang$core$Json_Decode$int,
+	A3(
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+		'address',
+		_elm_lang$core$Json_Decode$string,
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$AircraftAge)));
 var _user$project$App$Aircraft = function (a) {
 	return function (b) {
 		return function (c) {
@@ -12292,16 +12218,28 @@ var _user$project$App$update = F2(
 						{location: _p0._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
-			default:
-				var _p1 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeAircraft, _p0._0);
+			case 'AircraftAgeReport':
+				var _p1 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeAge, _p0._0);
 				if (_p1.ctor === 'Ok') {
-					var _p2 = _p1._0;
+					var _p3 = _p1._0;
+					var aircraft = function () {
+						var _p2 = A2(_elm_lang$core$Dict$get, _p3.address, model.aircraft);
+						if (_p2.ctor === 'Just') {
+							return _elm_lang$core$Native_Utils.update(
+								_p2._0,
+								{age: _p3.age});
+						} else {
+							return _elm_lang$core$Native_Utils.update(
+								_user$project$App$defaultAircraft,
+								{address: _p3.address, age: _p3.age});
+						}
+					}();
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								aircraft: A3(_elm_lang$core$Dict$insert, _p2.address, _p2, model.aircraft)
+								aircraft: A3(_elm_lang$core$Dict$insert, _p3.address, aircraft, model.aircraft)
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
@@ -12311,30 +12249,45 @@ var _user$project$App$update = F2(
 						_p1._0,
 						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
 				}
+			default:
+				var _p4 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeAircraft, _p0._0);
+				if (_p4.ctor === 'Ok') {
+					var _p5 = _p4._0;
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								aircraft: A3(_elm_lang$core$Dict$insert, _p5.address, _p5, model.aircraft)
+							}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				} else {
+					return A2(
+						_elm_lang$core$Debug$log,
+						_p4._0,
+						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
+				}
 		}
 	});
-var _user$project$App$Model = F2(
-	function (a, b) {
-		return {aircraft: a, location: b};
-	});
-var _user$project$App$init = function (location) {
-	return {
-		ctor: '_Tuple2',
-		_0: A2(_user$project$App$Model, _elm_lang$core$Dict$empty, location),
-		_1: _elm_lang$core$Platform_Cmd$none
-	};
-};
 var _user$project$App$UrlChange = function (a) {
 	return {ctor: 'UrlChange', _0: a};
+};
+var _user$project$App$AircraftAgeReport = function (a) {
+	return {ctor: 'AircraftAgeReport', _0: a};
 };
 var _user$project$App$AircraftReport = function (a) {
 	return {ctor: 'AircraftReport', _0: a};
 };
 var _user$project$App$channel = A3(
 	_saschatimme$elm_phoenix$Phoenix_Channel$on,
-	'report',
-	_user$project$App$AircraftReport,
-	_saschatimme$elm_phoenix$Phoenix_Channel$init('aircraft:reports'));
+	'age',
+	_user$project$App$AircraftAgeReport,
+	A3(
+		_saschatimme$elm_phoenix$Phoenix_Channel$on,
+		'report',
+		_user$project$App$AircraftReport,
+		_saschatimme$elm_phoenix$Phoenix_Channel$init('aircraft:reports')));
 var _user$project$App$subscriptions = function (model) {
 	var new_socket = _user$project$App$socket(model.location);
 	return A2(

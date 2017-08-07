@@ -24,6 +24,12 @@ main =
         }
 
 
+type alias Model =
+    { aircraft : Dict String Aircraft
+    , location : Location
+    }
+
+
 init : Location -> ( Model, Cmd Msg )
 init location =
     ( Model Dict.empty location
@@ -40,6 +46,12 @@ type alias AircraftCategory =
 type alias AircraftPosition =
     { lat : Float
     , lon : Float
+    }
+
+
+type alias AircraftAge =
+    { address : String
+    , age : Int
     }
 
 
@@ -62,15 +74,29 @@ type alias Aircraft =
     }
 
 
-type alias Model =
-    { aircraft : Dict String Aircraft
-    , location : Location
+defaultAircraft =
+    { address = ""
+    , callsign = ""
+    , country = ""
+    , registration = ""
+    , squawk = ""
+    , altitude = 0
+    , vr = 0
+    , vr_dir = ""
+    , velocity_kt = 0
+    , category = { set = "", category = "" }
+    , heading = 0
+    , position = { lat = 0.0, lon = 0.0 }
+    , distance = 0.0
+    , msgs = 0
+    , age = 0
     }
 
 
 type Msg
     = None
     | AircraftReport JD.Value
+    | AircraftAgeReport JD.Value
     | UrlChange Navigation.Location
 
 
@@ -86,6 +112,7 @@ socket location =
 channel =
     Channel.init "aircraft:reports"
         |> Channel.on "report" AircraftReport
+        |> Channel.on "age" AircraftAgeReport
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -96,6 +123,25 @@ update msg model =
 
         UrlChange location ->
             ( { model | location = location }, Cmd.none )
+
+        AircraftAgeReport msg ->
+            case JD.decodeValue decodeAge msg of
+                Ok msg ->
+                    let
+                        aircraft : Aircraft
+                        aircraft =
+                            case Dict.get msg.address model.aircraft of
+                                Just a ->
+                                    { a | age = msg.age }
+
+                                Nothing ->
+                                    { defaultAircraft | address = msg.address, age = msg.age }
+                    in
+                        ( { model | aircraft = Dict.insert msg.address aircraft model.aircraft }, Cmd.none )
+
+                Err err ->
+                    Debug.log err
+                        ( model, Cmd.none )
 
         AircraftReport msg ->
             case JD.decodeValue decodeAircraft msg of
@@ -148,6 +194,13 @@ decodePosition =
     decode AircraftPosition
         |> JDP.optional "lat" float 0.0
         |> JDP.optional "lon" float 0.0
+
+
+decodeAge : Decoder AircraftAge
+decodeAge =
+    decode AircraftAge
+        |> JDP.required "address" string
+        |> JDP.required "age" int
 
 
 view : Model -> Html Msg
