@@ -12,15 +12,23 @@ import Phoenix.Socket as Socket exposing (Socket, AbnormalClose)
 import Phoenix.Push as Push
 import Time exposing (Time)
 import Dict exposing (Dict)
+import Navigation exposing (..)
 
 
 main =
-    Html.program
+    Navigation.program UrlChange
         { init = init
         , subscriptions = subscriptions
         , view = view
         , update = update
         }
+
+
+init : Location -> ( Model, Cmd Msg )
+init location =
+    ( Model Dict.empty location
+    , Cmd.none
+    )
 
 
 type alias AircraftCategory =
@@ -56,16 +64,23 @@ type alias Aircraft =
 
 type alias Model =
     { aircraft : Dict String Aircraft
+    , location : Location
     }
 
 
 type Msg
     = None
     | AircraftReport JD.Value
+    | UrlChange Navigation.Location
 
 
-socket =
-    Socket.init "ws://localhost:4000/socket/websocket"
+socket : Location -> Socket Msg
+socket location =
+    let
+        host =
+            location.host
+    in
+        Socket.init ("ws://" ++ host ++ "/socket/websocket")
 
 
 channel =
@@ -73,16 +88,14 @@ channel =
         |> Channel.on "report" AircraftReport
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model Dict.empty, Cmd.none )
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         None ->
             ( model, Cmd.none )
+
+        UrlChange location ->
+            ( { model | location = location }, Cmd.none )
 
         AircraftReport msg ->
             case JD.decodeValue decodeAircraft msg of
@@ -96,7 +109,11 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Phoenix.connect socket [ channel ]
+    let
+        new_socket =
+            socket model.location
+    in
+        Phoenix.connect new_socket [ channel ]
 
 
 decodeAircraft : Decoder Aircraft
