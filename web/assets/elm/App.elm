@@ -55,6 +55,11 @@ type alias AircraftAge =
     }
 
 
+type alias AircraftTimeout =
+    { address : String
+    }
+
+
 type alias Aircraft =
     { address : String
     , callsign : String
@@ -95,8 +100,9 @@ defaultAircraft =
 
 type Msg
     = None
-    | AircraftReport JD.Value
-    | AircraftAgeReport JD.Value
+    | AircraftMsg JD.Value
+    | AircraftAgeMsg JD.Value
+    | AircraftTimeoutMsg JD.Value
     | UrlChange Navigation.Location
 
 
@@ -111,8 +117,9 @@ socket location =
 
 channel =
     Channel.init "aircraft:reports"
-        |> Channel.on "report" AircraftReport
-        |> Channel.on "age" AircraftAgeReport
+        |> Channel.on "report" AircraftMsg
+        |> Channel.on "age" AircraftAgeMsg
+        |> Channel.on "timeout" AircraftTimeoutMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -124,7 +131,16 @@ update msg model =
         UrlChange location ->
             ( { model | location = location }, Cmd.none )
 
-        AircraftAgeReport msg ->
+        AircraftTimeoutMsg msg ->
+            case JD.decodeValue decodeTimeout msg of
+                Ok msg ->
+                    ( { model | aircraft = Dict.remove msg.address model.aircraft }, Cmd.none )
+
+                Err err ->
+                    Debug.log err
+                        ( model, Cmd.none )
+
+        AircraftAgeMsg msg ->
             case JD.decodeValue decodeAge msg of
                 Ok msg ->
                     let
@@ -143,7 +159,7 @@ update msg model =
                     Debug.log err
                         ( model, Cmd.none )
 
-        AircraftReport msg ->
+        AircraftMsg msg ->
             case JD.decodeValue decodeAircraft msg of
                 Ok msg ->
                     ( { model | aircraft = Dict.insert msg.address msg model.aircraft }, Cmd.none )
@@ -201,6 +217,12 @@ decodeAge =
     decode AircraftAge
         |> JDP.required "address" string
         |> JDP.required "age" int
+
+
+decodeTimeout : Decoder AircraftTimeout
+decodeTimeout =
+    decode AircraftTimeout
+        |> JDP.required "address" string
 
 
 view : Model -> Html Msg

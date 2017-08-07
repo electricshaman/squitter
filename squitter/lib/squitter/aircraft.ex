@@ -315,7 +315,7 @@ defmodule Squitter.Aircraft do
     new_state = set_age(state)
     if state.timeout_enabled && timeout_expired?(new_state) do
       broadcast(:timeout, %{address: state.address})
-      {:stop, {:shutdown, :timed_out}, new_state}
+      {:stop, {:shutdown, :timeout}, new_state}
     else
       broadcast(:age, %{address: state.address, age: state.age})
       schedule_tick()
@@ -323,7 +323,7 @@ defmodule Squitter.Aircraft do
     end
   end
 
-  def terminate({:shutdown, :timed_out}, state) do
+  def terminate({:shutdown, :timeout}, state) do
     Logger.debug "Aircraft #{state.address} timed out"
   end
 
