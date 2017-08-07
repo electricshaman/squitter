@@ -2,7 +2,7 @@ use Mix.Config
 target = Mix.Project.config[:target]
 
 config :nerves, :firmware,
-  rootfs_additions: "rootfs_additions"
+  rootfs_additions: "rootfs_overlay"
 
 config :bootloader,
   init: [
