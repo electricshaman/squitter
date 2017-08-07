@@ -29,19 +29,21 @@ defmodule Squitter.Firmware.Mixfile do
 
   def application("host") do
     [mod: {Squitter.Firmware.Application, []},
+     included_applications: [:squitter, :squitter_web],
      extra_applications: [:logger]]
   end
 
   def application(_target) do
     [mod: {Squitter.Firmware.Application, []},
+     included_applications: [:squitter, :squitter_web],
      extra_applications: [:logger]]
   end
 
   def deps do
     [{:nerves, "~> 0.7"},
      {:nerves_firmware_ssh, github: "fhunleth/nerves_firmware_ssh"},
-     {:squitter_web, path: "../web", runtime: false},
-     {:squitter, path: "../squitter", runtime: false},
+     {:squitter_web, path: "../web"},
+     {:squitter, path: "../squitter"},
      deps(@target)]
   end
 

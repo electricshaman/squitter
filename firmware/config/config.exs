@@ -9,9 +9,7 @@ config :bootloader,
     :nerves_runtime,
     :nerves_network,
     :nerves_init_net_kernel,
-    :nerves_firmware_ssh,
-    :squitter,
-    :squitter_web
+    :nerves_firmware_ssh
   ],
   app: :squitter_firmware
 
