@@ -180,6 +180,32 @@ view model =
         ]
 
 
+intToString : Int -> String
+intToString input =
+    if input == 0 then
+        ""
+    else
+        toString input
+
+
+floatToString : Float -> String
+floatToString input =
+    if input == 0.0 then
+        ""
+    else
+        toString input
+
+
+renderVr : Int -> String -> String
+renderVr vr vr_dir =
+    if vr_dir == "up" then
+        "+" ++ toString vr
+    else if vr_dir == "down" then
+        "-" ++ toString vr
+    else
+        intToString vr
+
+
 aircraftRow : Aircraft -> Html msg
 aircraftRow aircraft =
     tr []
@@ -188,13 +214,13 @@ aircraftRow aircraft =
         , td [] [ text aircraft.registration ]
         , td [] [ text aircraft.callsign ]
         , td [] [ text aircraft.squawk ]
-        , td [] [ text (toString aircraft.altitude) ]
-        , td [] [ text (toString aircraft.velocity_kt) ]
-        , td [] [ text (toString aircraft.vr) ]
-        , td [] [ text (toString aircraft.distance) ]
-        , td [] [ text (toString aircraft.heading) ]
-        , td [] [ text (toString aircraft.position.lat) ]
-        , td [] [ text (toString aircraft.position.lon) ]
-        , td [] [ text (toString aircraft.msgs) ]
+        , td [] [ text (intToString aircraft.altitude) ]
+        , td [] [ text (intToString aircraft.velocity_kt) ]
+        , td [] [ text (renderVr aircraft.vr aircraft.vr_dir) ]
+        , td [] [ text (floatToString aircraft.distance) ]
+        , td [] [ text (intToString aircraft.heading) ]
+        , td [] [ text (floatToString aircraft.position.lat) ]
+        , td [] [ text (floatToString aircraft.position.lon) ]
+        , td [] [ text (intToString aircraft.msgs) ]
         , td [] [ text (toString aircraft.age) ]
         ]
