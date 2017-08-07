@@ -30,6 +30,9 @@
           <li><a href="#">Live Map</a></li>
           <li><a href="#">Stats</a></li>
         </ul>
+        <a class="navbar-brand pull-right" href="http://www.nerves-project.org" target="_new">
+          <img alt="Powered by Nerves" src="/images/nerves-logo.png">
+        </a>
       </div>
     </nav>
     </header>
