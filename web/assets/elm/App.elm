@@ -255,6 +255,18 @@ view model =
         ]
 
 
+intToHeading : Int -> String
+intToHeading heading =
+    let
+        headingString =
+            intToString heading
+    in
+        if headingString == "" then
+            headingString
+        else
+            headingString ++ "°"
+
+
 intToString : Int -> String
 intToString input =
     if input == 0 then
@@ -293,7 +305,7 @@ aircraftRow aircraft =
         , td [] [ text (intToString aircraft.velocity_kt) ]
         , td [] [ text (renderVr aircraft.vr aircraft.vr_dir) ]
         , td [] [ text (floatToString aircraft.distance) ]
-        , td [] [ text (intToString aircraft.heading) ]
+        , td [] [ text (intToHeading aircraft.heading) ]
         , td [] [ text (floatToString aircraft.position.lat) ]
         , td [] [ text (floatToString aircraft.position.lon) ]
         , td [] [ text (intToString aircraft.msgs) ]

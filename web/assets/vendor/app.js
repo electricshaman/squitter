@@ -11643,6 +11643,10 @@ var _user$project$App$renderVr = F2(
 			'-',
 			_elm_lang$core$Basics$toString(vr)) : _user$project$App$intToString(vr));
 	});
+var _user$project$App$intToHeading = function (heading) {
+	var headingString = _user$project$App$intToString(heading);
+	return _elm_lang$core$Native_Utils.eq(headingString, '') ? headingString : A2(_elm_lang$core$Basics_ops['++'], headingString, '°');
+};
 var _user$project$App$aircraftRow = function (aircraft) {
 	return A2(
 		_elm_lang$html$Html$tr,
@@ -11749,7 +11753,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 													{
 														ctor: '::',
 														_0: _elm_lang$html$Html$text(
-															_user$project$App$intToString(aircraft.heading)),
+															_user$project$App$intToHeading(aircraft.heading)),
 														_1: {ctor: '[]'}
 													}),
 												_1: {
