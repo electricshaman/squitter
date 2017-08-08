@@ -23,14 +23,6 @@ defmodule Squitter.Application do
     Supervisor.start_link(children, opts)
   end
 
-  defp pubsub do
-    if Application.get_env(:squitter, :start_pubsub) do
-      [supervisor(Phoenix.PubSub.PG2, [Squitter.PubSub, []])]
-    else
-      []
-    end
-  end
-
   defp registry_supervisor(name, keys) do
     supervisor(Registry, [keys, name, [partitions: System.schedulers_online()]], id: name)
   end
