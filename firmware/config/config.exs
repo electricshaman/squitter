@@ -40,5 +40,8 @@ config :squitter_web, Squitter.Web.Endpoint,
   pubsub: [name: Squitter.PubSub,
            adapter: Phoenix.PubSub.PG2]
 
+config :squitter, :site,
+  location: {35.4690, -97.5085}
+
 # import_config "#{Mix.Project.config[:target]}.exs"
 import_config "#{Mix.env}.exs"

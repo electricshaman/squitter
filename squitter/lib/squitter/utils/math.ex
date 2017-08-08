@@ -12,6 +12,9 @@ defmodule Squitter.Utils.Math do
     trunc(x)
   end
 
+  def sin(x),
+    do: :math.sin(x)
+
   def acos(x),
     do: :math.acos(x)
 
@@ -24,11 +27,17 @@ defmodule Squitter.Utils.Math do
   def cos2(x),
     do: 0.5 + 0.5 * cos(2*x)
 
+  def atan2(x, y),
+    do: :math.atan2(x, y)
+
   def pow(x, y),
     do: :math.pow(x, y)
 
   def mod(x, y),
     do: (x-y) * floor(x/y)
+
+  def sqrt(x),
+    do: :math.sqrt(x)
 
   @nz 15
 

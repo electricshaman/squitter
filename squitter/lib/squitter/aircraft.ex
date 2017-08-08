@@ -9,7 +9,7 @@ defmodule Squitter.Aircraft do
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @timeout_period_s   60
-  @clock_s        1
+  @clock_s            1
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
@@ -40,6 +40,7 @@ defmodule Squitter.Aircraft do
       registration: "",
       squawk: "",
       distance: 0.0,
+      site_location: get_site_location(),
       position_history: [],
       timeout_enabled: true,
       last_received: System.monotonic_time(:seconds),
@@ -78,12 +79,12 @@ defmodule Squitter.Aircraft do
 
   # position with even flag
   defp handle_msg(%{tc: {:airborne_pos_baro_alt, _}, type_msg: %{flag: flag} = pos}, state) when band(flag, 1) == 0 do
-    calculate_lat_lon(%{state | altitude: pos.alt, even_pos: pos})
+    calculate_position(%{state | altitude: pos.alt, even_pos: pos})
   end
 
   # position with odd flag
   defp handle_msg(%{tc: {:airborne_pos_baro_alt, _}, type_msg: %{flag: flag} = pos}, state) when band(flag, 1) == 1 do
-    calculate_lat_lon(%{state | altitude: pos.alt, odd_pos: pos})
+    calculate_position(%{state | altitude: pos.alt, odd_pos: pos})
   end
 
   defp handle_msg(%{tc: :air_velocity, type_msg: %GroundSpeed{} = gs}, state) do
@@ -278,11 +279,11 @@ defmodule Squitter.Aircraft do
     end
   end
 
-  def calculate_lat_lon(%{even_pos: even, odd_pos: odd} = state) when is_nil(even) or is_nil(odd) do
+  def calculate_position(%{even_pos: even, odd_pos: odd} = state) when is_nil(even) or is_nil(odd) do
     {:ok, state}
   end
 
-  def calculate_lat_lon(%{even_pos: even, odd_pos: odd} = state) do
+  def calculate_position(%{even_pos: even, odd_pos: odd} = state) do
     lat_pair = calculate_lat({even.lat_cpr, odd.lat_cpr})
     {lat_even, lat_odd} = lat_pair
 
@@ -291,11 +292,15 @@ defmodule Squitter.Aircraft do
 
       # Continue computing position
       if even.index > odd.index do
-        lon = calculate_lon(lat_even, lon_pair)
-        {:ok, %{state | lat: elem(lat_even, 1), lon: elem(lon, 1)}}
+        {_, lat} = lat_even
+        {_, lon} = calculate_lon(lat_even, lon_pair)
+        distance = calculate_distance({lat, lon}, state.site_location)
+        {:ok, %{state | lat: lat, lon: lon, distance: distance}}
       else
-        lon = calculate_lon(lat_odd, lon_pair)
-        {:ok, %{state | lat: elem(lat_odd, 1), lon: elem(lon, 1)}}
+        {_, lat} = lat_odd
+        {_, lon} = calculate_lon(lat_odd, lon_pair)
+        distance = calculate_distance({lat, lon}, state.site_location)
+        {:ok, %{state | lat: lat, lon: lon, distance: distance}}
       end
     else
       #Logger.debug "Different latitude zones"
@@ -303,6 +308,37 @@ defmodule Squitter.Aircraft do
       {:ok, state}
     end
   end
+
+  defp calculate_distance(coord1, coord2, unit \\ :NM)
+  defp calculate_distance({_lat0, _lon0}, :unknown, _unit),
+    do: 0.0
+  defp calculate_distance({lat0, lon0}, {lat1, lon1}, unit) do
+    lat0 = lat0 * pi() / 180.0
+    lon0 = lon0 * pi() / 180.0
+    lat1 = lat1 * pi() / 180.0
+    lon1 = lon1 * pi() / 180.0
+
+    dlat = abs(lat1 - lat0)
+    dlon = abs(lon1 - lon0)
+
+    result_m =
+      if dlat < 0.001 && dlon < 0.001 do
+        a = sin(dlat / 2) * sin(dlat / 2) + cos(lat0) * cos(lat1) * sin(dlon / 2) * sin(dlon / 2)
+        6.371e6 * 2 * atan2(sqrt(a), sqrt(1.0 - a))
+      else
+        6.371e6 * acos(sin(lat0) * sin(lat1) + cos(lat0) * cos(lat1) * cos(dlon))
+      end
+
+    convert(:m, unit, result_m)
+    |> Float.round(1)
+  end
+
+  defp convert(:m, :NM, x),
+    do: x / 1852.0
+  defp convert(:m, :m, x),
+    do: x
+  defp convert(_, _, _x),
+    do: {:error, :unknown_unit}
 
   def in_sane_lat_zone?({_, lat1}, {_, lat2}) do
     in_same_lat_zone?(lat1, lat2)
@@ -356,4 +392,8 @@ defmodule Squitter.Aircraft do
     Process.send_after(self(), :tick, @clock_s * 1000)
   end
 
+  defp get_site_location do
+    site = Application.get_env(:squitter, :site)
+    if is_nil(site), do: :unknown, else: Keyword.get(site, :location, :unknown)
+  end
 end
