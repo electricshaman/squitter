@@ -55,7 +55,8 @@ defmodule Squitter.StatTracker do
     count = Enum.sum(counts)
     {oldest, newest} = Enum.min_max(times)
     time_diff = (newest - oldest) / 1000
-    Float.round(count / time_diff, 1)
+
+    if time_diff > 0, do: Float.round(count / time_diff, 1), else: 0.0
   end
 
   defp calculate_totals(totals, acc) do
