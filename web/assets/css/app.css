@@ -29,3 +29,7 @@
   width: 35px;
   height: 35px;
 }
+
+#nerves-badge {
+  line-height: 55px !important;
+}
