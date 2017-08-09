@@ -7,7 +7,7 @@ defmodule Squitter.DecodingSupervisor do
 
   def init([]) do
     children = [
-      worker(Squitter.Service.Dump1090, [[path: "/home/jeff/Code/dump1090/dump1090"]]),
+      worker(Squitter.Service.Dump1090, [[path: "dump1090"]]),
       worker(Squitter.AvrTcpStage, ["localhost", 30002]),
       worker(Squitter.DecoderStage, [500, 1000]),
       worker(Squitter.DispatchStage, [500, 1000])
