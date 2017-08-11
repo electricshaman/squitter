@@ -169,6 +169,11 @@ defmodule Squitter.Aircraft do
     {:ok, state}
   end
 
+  defp handle_msg(%{tc: :surface_sys_status, type_msg: _}, state) do
+    # TODO
+    {:ok, state}
+  end
+
   defp handle_msg(other, state) do
     Logger.warn "Unhandled msg in #{state.address}: #{inspect other}"
     {:ok, state}
