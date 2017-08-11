@@ -69,7 +69,7 @@ defmodule Squitter.Aircraft do
   end
 
   defp handle_msg(%{crc: :invalid}, state) do
-    Logger.warn "Ignoring message with invalid CRC"
+    # Ignore messages with invalid CRC
     {:ok, state}
   end
 
