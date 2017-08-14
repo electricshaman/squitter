@@ -38,6 +38,31 @@ unsigned long modes_checksum(unsigned char *msg, int bits) {
     return crc;
 }
 
+int calculate_gillham_altitude(int value)
+{
+    value ^= (value >> 8);
+    value ^= (value >> 4);
+    value ^= (value >> 2);
+    value ^= (value >> 1);
+
+    value -= (((value >> 4) * 6) + ((((value) % 16) / 5) * 2));
+
+    return (value - 13) * 100;
+}
+
+static ERL_NIF_TERM
+gillham_altitude(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  int coded;
+  int altitude;
+
+  if(!enif_get_int(env, argv[0], &coded))
+    return enif_make_badarg(env);
+
+ altitude = calculate_gillham_altitude(coded);
+ return enif_make_int(env, altitude);
+}
+
 static ERL_NIF_TERM
 checksum(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -65,7 +90,8 @@ checksum(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ErlNifFunc nif_funcs[] = {
-  {"checksum", 2, checksum}
+  {"checksum", 2, checksum},
+  {"gillham_altitude", 1, gillham_altitude}
 };
 
 ERL_NIF_INIT(Elixir.Squitter.Decoding.ModeS, nif_funcs, NULL, NULL, NULL, NULL)

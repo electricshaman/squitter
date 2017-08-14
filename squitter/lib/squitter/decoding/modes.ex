@@ -20,6 +20,10 @@ defmodule Squitter.Decoding.ModeS do
     raise "NIF checksum/2 not implemented"
   end
 
+  def gillham_altitude(_coded) do
+    raise "NIF gillham_altitude/1 not implemented"
+  end
+
   def icao_address(<<df :: 5, _rest :: bits>> = msg, checksum) when df in [0, 4, 5, 16, 20, 21, 24] do
     parity = binary_part(msg, byte_size(msg), -3)
     <<check_bytes :: 3-bytes>> = <<checksum :: 24>>
