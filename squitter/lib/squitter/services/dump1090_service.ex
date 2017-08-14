@@ -18,12 +18,15 @@ defmodule Squitter.Service.Dump1090 do
   end
 
   def init([path, opts]) do
-    path = System.find_executable(path)
-    gain = opts[:gain] || 45
-
-    port = start_port(path, gain)
-
-    {:ok, %{port: port, path: path, gain: gain}}
+    case System.find_executable(path) do
+      nil ->
+        Logger.error("Can't find dump1090!")
+        {:stop, :exec_not_found}
+      found ->
+        gain = opts[:gain] || 45
+        port = start_port(found, gain)
+        {:ok, %{port: port, path: found, gain: gain}}
+    end
   end
 
   def handle_info({_port, {:data, msg}}, state) do
