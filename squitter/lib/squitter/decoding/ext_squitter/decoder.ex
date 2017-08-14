@@ -71,9 +71,40 @@ defmodule Squitter.Decoding.ExtSquitter do
       _       :: binary>> = msg
 
     <<alt_a :: 7, alt_q :: 1, alt_b :: 4>> = alt_bin
-    alt_x = if alt_q == 1, do: 25, else: 100
-    <<alt_c :: 11>> = <<alt_a :: 7, alt_b :: 4>>
-    alt = alt_c * alt_x - 1000
+
+    alt =
+      if alt_q == 1 do
+        <<n :: 11>> = <<alt_a :: 7, alt_b :: 4>>
+        n * 25 - 1000
+      else
+        # TODO: Clean this up somehow
+        <<c1 :: 1,
+          a1 :: 1,
+          c2 :: 1,
+          a2 :: 1,
+          c4 :: 1,
+          a4 :: 1,
+          b1 :: 1,
+          _  :: 1,
+          b2 :: 1,
+          d2 :: 1,
+          b4 :: 1,
+          d4 :: 1>> = alt_bin
+
+        <<n :: 11>> = <<d2 :: 1,
+                        d4 :: 1,
+                        a1 :: 1,
+                        a2 :: 1,
+                        a4 :: 1,
+                        b1 :: 1,
+                        b2 :: 1,
+                        b4 :: 1,
+                        c1 :: 1,
+                        c2 :: 1,
+                        c4 :: 1>>
+
+        ModeS.gillham_altitude(n)
+      end
 
     %PositionBaroAlt{
       index: index,
