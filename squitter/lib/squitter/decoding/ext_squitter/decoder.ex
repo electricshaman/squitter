@@ -1,5 +1,5 @@
 defmodule Squitter.Decoding.ExtSquitter do
-  import Squitter.Decoding.Utils # maybe convert to `use NADSB.Decoder`
+  import Squitter.Decoding.Utils
 
   require Logger
 
