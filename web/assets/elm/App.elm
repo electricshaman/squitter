@@ -230,7 +230,7 @@ view model =
     div
         [ class "container-fluid" ]
         [ h3 [] [ text "Aircraft" ]
-        , table [ class "table", class "table-striped", class "table-condensed" ]
+        , table [ class "table", class "table-striped", class "table-condensed", id "aircraft-table" ]
             [ thead []
                 [ tr []
                     [ th [] [ text "ICAO" ]
