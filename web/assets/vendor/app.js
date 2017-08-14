@@ -11847,7 +11847,11 @@ var _user$project$App$view = function (model) {
 							_1: {
 								ctor: '::',
 								_0: _elm_lang$html$Html_Attributes$class('table-condensed'),
-								_1: {ctor: '[]'}
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$id('aircraft-table'),
+									_1: {ctor: '[]'}
+								}
 							}
 						}
 					},
@@ -12252,27 +12256,26 @@ var _user$project$App$update = F2(
 				var _p2 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeAge, _p0._0);
 				if (_p2.ctor === 'Ok') {
 					var _p4 = _p2._0;
-					var aircraft = function () {
-						var _p3 = A2(_elm_lang$core$Dict$get, _p4.address, model.aircraft);
-						if (_p3.ctor === 'Just') {
-							return _elm_lang$core$Native_Utils.update(
-								_p3._0,
-								{age: _p4.age});
-						} else {
-							return _elm_lang$core$Native_Utils.update(
-								_user$project$App$defaultAircraft,
-								{address: _p4.address, age: _p4.age});
-						}
-					}();
-					return {
-						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
-							model,
-							{
-								aircraft: A3(_elm_lang$core$Dict$insert, _p4.address, aircraft, model.aircraft)
-							}),
-						_1: _elm_lang$core$Platform_Cmd$none
-					};
+					var _p3 = A2(_elm_lang$core$Dict$get, _p4.address, model.aircraft);
+					if (_p3.ctor === 'Just') {
+						return {
+							ctor: '_Tuple2',
+							_0: _elm_lang$core$Native_Utils.update(
+								model,
+								{
+									aircraft: A3(
+										_elm_lang$core$Dict$insert,
+										_p4.address,
+										_elm_lang$core$Native_Utils.update(
+											_p3._0,
+											{age: _p4.age}),
+										model.aircraft)
+								}),
+							_1: _elm_lang$core$Platform_Cmd$none
+						};
+					} else {
+						return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+					}
 				} else {
 					return A2(
 						_elm_lang$core$Debug$log,

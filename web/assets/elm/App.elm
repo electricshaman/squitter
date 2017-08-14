@@ -143,17 +143,13 @@ update msg model =
         AircraftAgeMsg msg ->
             case JD.decodeValue decodeAge msg of
                 Ok msg ->
-                    let
-                        aircraft : Aircraft
-                        aircraft =
-                            case Dict.get msg.address model.aircraft of
-                                Just a ->
-                                    { a | age = msg.age }
+                    case Dict.get msg.address model.aircraft of
+                        Just a ->
+                            ( { model | aircraft = Dict.insert msg.address { a | age = msg.age } model.aircraft }, Cmd.none )
 
-                                Nothing ->
-                                    { defaultAircraft | address = msg.address, age = msg.age }
-                    in
-                        ( { model | aircraft = Dict.insert msg.address aircraft model.aircraft }, Cmd.none )
+                        Nothing ->
+                            -- If we don't have the aircraft yet, ignore the age message
+                            ( model, Cmd.none )
 
                 Err err ->
                     Debug.log err
