@@ -49,10 +49,14 @@ defmodule Squitter.Aircraft do
 
   def handle_cast({:dispatch, msg}, state) do
     {:ok, new_state} = handle_msg(msg, state)
+    new_state = set_received(new_state)
 
-    broadcast(:report, build_report(state))
+    unless new_state.msgs <= 1 do
+      # Broadcast only for aircraft which we've received more than 1 message
+      broadcast(:report, build_report(new_state))
+    end
 
-    {:noreply, set_received(new_state)}
+    {:noreply, new_state}
   end
 
   def handle_cast(:enable_age_timeout, state) do
