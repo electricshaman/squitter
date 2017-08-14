@@ -40,6 +40,11 @@ config :squitter_web, Squitter.Web.Endpoint,
   pubsub: [name: Squitter.PubSub,
            adapter: Phoenix.PubSub.PG2]
 
+config :squitter, :decoding,
+  avr_host: "localhost",
+  avr_port: 30002,
+  dump1090_path: "dump1090"
+
 config :squitter, :site,
   location: {35.4690, -97.5085}
 

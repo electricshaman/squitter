@@ -11,8 +11,6 @@ defmodule Squitter.AvrTcpStage do
   end
 
   def init([host, port]) do
-    state = %{host: host, port: port, socket: nil, buffer: []}
-
     send(self(), :connect)
 
     {:producer, %{
