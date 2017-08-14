@@ -48,15 +48,14 @@ defmodule Squitter.Aircraft do
   end
 
   def handle_cast({:dispatch, msg}, state) do
-    {:ok, new_state} = handle_msg(msg, state)
-    new_state = set_received(new_state)
-
-    unless new_state.msgs <= 1 do
-      # Broadcast only for aircraft which we've received more than 1 message
-      broadcast(:report, build_report(new_state))
+    case handle_msg(msg, state) do
+      {:ok, new_state} ->
+        new_state = set_received(new_state)
+        broadcast(:report, build_report(new_state), new_state)
+        {:noreply, new_state}
+      {:error, :invalid_crc} ->
+        {:noreply, state}
     end
-
-    {:noreply, new_state}
   end
 
   def handle_cast(:enable_age_timeout, state) do
@@ -74,7 +73,7 @@ defmodule Squitter.Aircraft do
 
   defp handle_msg(%{crc: :invalid}, state) do
     # Ignore messages with invalid CRC
-    {:ok, state}
+    {:error, :invalid_crc}
   end
 
   defp handle_msg(%{tc: {:aircraft_id, _}, type_msg: %{aircraft_cat: cat, callsign: callsign}}, state) do
@@ -328,28 +327,37 @@ defmodule Squitter.Aircraft do
   def handle_info(:tick, state) do
     new_state = set_age(state)
     if state.timeout_enabled && timeout_expired?(new_state) do
-      broadcast(:timeout, %{address: state.address})
       {:stop, {:shutdown, :timeout}, new_state}
     else
-      broadcast(:age, %{address: state.address, age: state.age})
+      broadcast(:age, %{address: state.address, age: state.age}, state)
       schedule_tick()
       {:noreply, new_state}
     end
   end
 
   def terminate({:shutdown, :timeout}, state) do
+    broadcast(:timeout, %{address: state.address}, state)
     Logger.debug "Aircraft #{state.address} timed out"
   end
 
   def terminate(reason, state) do
-    broadcast(:terminated, %{address: state.address})
+    broadcast(:terminated, %{address: state.address}, state)
     Logger.debug "Aircraft #{state.address} process terminated due to reason #{inspect reason}"
   end
 
   # Private helpers
 
-  defp broadcast(type, msg) when is_atom(type) do
-    Squitter.ReportCollector.report({type, msg})
+  defp broadcast(type, msg, state) when is_atom(type) do
+    cond do
+      type in [:timeout, :terminated] ->
+        # Always broadcast timeouts and terminations
+        Squitter.ReportCollector.report({type, msg})
+      true ->
+        # Everything else: broadcast only for aircraft which we've received more than 1 message
+        if state.msgs >= 2 do
+          Squitter.ReportCollector.report({type, msg})
+        end
+    end
   end
 
   defp timeout_expired?(%{age: age}) do
