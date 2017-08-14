@@ -6,16 +6,48 @@ defmodule Squitter.Web.ReportPusher do
   end
 
   def init(_) do
-    {:consumer, %{}, subscribe_to: [Squitter.ReportCollector]}
+    {:consumer, %{}, subscribe_to: [{Squitter.ReportCollector, interval: 1000}]}
   end
 
-  #def handle_subscribe(:producer, [], {#PID<0.353.0>, #Reference<0.1622845777.740556803.65307>}, %{}) do
-  #end
+  def handle_subscribe(:producer, opts, from, producers) do
+    pending = opts[:max_demand] || 1000
+    interval = opts[:interval] || 5000
 
-  def handle_events(reports, from, state) do
+    producers = Map.put(producers, from, {pending, interval})
+    producers = ask_and_schedule(producers, from)
+
+    {:manual, producers}
+  end
+
+  def handle_cancel(_, from, producers) do
+    {:noreply, [], Map.delete(producers, from)}
+  end
+
+
+  def handle_events(reports, from, producers) do
+    producers = Map.update!(producers, from, fn {pending, interval} ->
+      {pending + length(reports), interval}
+    end)
+
     for {type, msg} <- reports do
       Squitter.Web.Endpoint.broadcast!("aircraft:reports", to_string(type), msg)
     end
-    {:noreply, [], state}
+
+    {:noreply, [], producers}
+  end
+
+  def handle_info({:ask, from}, producers) do
+    {:noreply, [], ask_and_schedule(producers, from)}
+  end
+
+  defp ask_and_schedule(producers, from) do
+    case producers do
+      %{^from => {pending, interval}} ->
+        GenStage.ask(from, pending)
+        Process.send_after(self(), {:ask, from}, interval)
+        Map.put(producers, from, {0, interval})
+      %{} ->
+        producers
+    end
   end
 end
