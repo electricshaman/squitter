@@ -99,9 +99,9 @@ defmodule Squitter.Aircraft do
 
   defp handle_msg(%{tc: :air_velocity, type_msg: %AirSpeed{} = msg}, state) do
     heading = if msg.sign_hdg do
-      :erlang.float(msg.hdg) / 1024.0 * 360.0
+      :erlang.trunc(:erlang.float(msg.hdg) / 1024.0 * 360.0)
     else
-      :na
+      0
     end
 
     as_type = if msg.as_type, do: :true, else: :indicated
