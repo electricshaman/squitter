@@ -61,7 +61,10 @@ defmodule Squitter.AircraftLookup do
 
   defp unzip_faa_db do
     Logger.debug("Unzipping FAA registration database")
-    :zip.unzip(to_charlist(@faa_db_zip), [:keep_old_files, {:cwd, @faa_db_dir}])
+    :zip.unzip(to_charlist(@faa_db_zip), [
+                 :keep_old_files,
+                 {:cwd, @faa_db_dir},
+                 {:file_list, [@faa_master_file]}])
   end
 
   defp load_faa_db do
