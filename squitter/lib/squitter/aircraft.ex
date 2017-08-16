@@ -6,6 +6,7 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
+  alias Squitter.AircraftLookup
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @timeout_period_s   60
@@ -17,6 +18,12 @@ defmodule Squitter.Aircraft do
 
   def init([address]) do
     :pg2.join(:aircraft, self())
+
+    reg =
+      case AircraftLookup.get_registration(address) do
+        {:ok, registration} -> registration
+        {:error, _} -> ""
+      end
 
     schedule_tick()
 
@@ -37,7 +44,7 @@ defmodule Squitter.Aircraft do
       vr: 0,
       vr_dir: :na,
       vr_src: nil,
-      registration: "",
+      registration: reg,
       squawk: "",
       distance: 0.0,
       site_location: get_site_location(),
