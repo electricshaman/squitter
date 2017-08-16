@@ -1,5 +1,6 @@
 defmodule Squitter.AircraftLookup do
   use GenServer
+  require Logger
 
   defstruct [:n_number, :serial_number, :mfr_mdl_code, :eng_mfr_mdl, :year_mfr,
              :type_registrant, :name, :street, :street2, :city, :state, :zip_code,
@@ -29,20 +30,8 @@ defmodule Squitter.AircraftLookup do
 
   def init(_) do
     unzip_faa_db()
-    _ = :ets.new(@table, [:private, :named_table])
-    File.stream!(@faa_master_file)
-    |> Stream.drop(1)
-    |> Stream.each(fn(line) ->
-         record = transform_line(line)
-         true = :ets.insert_new(@table, {record.mode_s_code_hex, record})
-       end)
-    |> Stream.run
-
+    load_faa_db()
     {:ok, %{}}
-  end
-
-  def unzip_faa_db do
-    :zip.unzip(to_charlist(@faa_db_zip), [:keep_old_files, {:cwd, @faa_db_dir}])
   end
 
   def handle_call({:get_reg, address}, _from, state) do
@@ -60,12 +49,33 @@ defmodule Squitter.AircraftLookup do
     {:reply, {:ok, lookup_country(address)}, state}
   end
 
+  # Private
+
   defp transform_line(line) do
     split = String.split(line, [","])
     Enum.with_index(split)
     |> Enum.reduce(%__MODULE__{}, fn({field, index}, record) ->
          map_field(String.trim(field), index, record)
        end)
+  end
+
+  defp unzip_faa_db do
+    Logger.debug("Unzipping FAA registration database")
+    :zip.unzip(to_charlist(@faa_db_zip), [:keep_old_files, {:cwd, @faa_db_dir}])
+  end
+
+  defp load_faa_db do
+    Logger.debug("Loading FAA registration database into ETS")
+
+    _ = :ets.new(@table, [:private, :named_table])
+
+    File.stream!(@faa_master_file)
+    |> Stream.drop(1)
+    |> Stream.each(fn(line) ->
+         record = transform_line(line)
+         true = :ets.insert_new(@table, {record.mode_s_code_hex, record})
+       end)
+    |> Stream.run
   end
 
   defp map_field(field, index, record) do
