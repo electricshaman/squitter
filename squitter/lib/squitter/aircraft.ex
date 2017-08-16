@@ -25,13 +25,15 @@ defmodule Squitter.Aircraft do
         {:error, _} -> ""
       end
 
+    {:ok, country} = AircraftLookup.get_country(address)
+
     schedule_tick()
 
     {:ok, %{
       address: address,
       msgs: 0,
       category: %{set: :unknown, category: :unknown},
-      country: "",
+      country: country,
       altitude: 0,
       callsign: "",
       lat: 0.0,
