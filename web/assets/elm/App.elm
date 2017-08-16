@@ -25,7 +25,7 @@ main =
 
 
 type alias Model =
-    { aircraft : Dict String Aircraft
+    { aircraft : Dict String StateVector
     , location : Location
     }
 
@@ -49,9 +49,19 @@ type alias AircraftPosition =
     }
 
 
+type alias AircraftAgeList =
+    { messages : List AircraftAge
+    }
+
+
 type alias AircraftAge =
     { address : String
     , age : Int
+    }
+
+
+type alias AircraftTimeoutList =
+    { messages : List AircraftTimeout
     }
 
 
@@ -60,7 +70,12 @@ type alias AircraftTimeout =
     }
 
 
-type alias Aircraft =
+type alias StateVectorList =
+    { messages : List StateVector
+    }
+
+
+type alias StateVector =
     { address : String
     , callsign : String
     , country : String
@@ -79,30 +94,11 @@ type alias Aircraft =
     }
 
 
-defaultAircraft =
-    { address = ""
-    , callsign = ""
-    , country = ""
-    , registration = ""
-    , squawk = ""
-    , altitude = 0
-    , vr = 0
-    , vr_dir = ""
-    , velocity_kt = 0
-    , category = { set = "", category = "" }
-    , heading = 0
-    , position = { lat = 0.0, lon = 0.0 }
-    , distance = 0.0
-    , msgs = 0
-    , age = 0
-    }
-
-
 type Msg
     = None
-    | AircraftMsg JD.Value
-    | AircraftAgeMsg JD.Value
-    | AircraftTimeoutMsg JD.Value
+    | AircraftStateVectorsMsg JD.Value
+    | AircraftAgesMsg JD.Value
+    | AircraftTimeoutsMsg JD.Value
     | UrlChange Navigation.Location
 
 
@@ -116,10 +112,31 @@ socket location =
 
 
 channel =
-    Channel.init "aircraft:reports"
-        |> Channel.on "report" AircraftMsg
-        |> Channel.on "age" AircraftAgeMsg
-        |> Channel.on "timeout" AircraftTimeoutMsg
+    Channel.init "aircraft:messages"
+        |> Channel.on "state_vector" AircraftStateVectorsMsg
+        |> Channel.on "age" AircraftAgesMsg
+        |> Channel.on "timeout" AircraftTimeoutsMsg
+
+
+removeAircraftAfterTimeout : AircraftTimeout -> Model -> Model
+removeAircraftAfterTimeout timeout model =
+    { model | aircraft = Dict.remove timeout.address model.aircraft }
+
+
+updateAircraftAge : AircraftAge -> Model -> Model
+updateAircraftAge age model =
+    case Dict.get age.address model.aircraft of
+        Just a ->
+            { model | aircraft = Dict.insert age.address { a | age = age.age } model.aircraft }
+
+        Nothing ->
+            -- If we don't have the aircraft yet, ignore the age message
+            model
+
+
+updateStateVector : StateVector -> Model -> Model
+updateStateVector vector model =
+    { model | aircraft = Dict.insert vector.address vector model.aircraft }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -131,34 +148,28 @@ update msg model =
         UrlChange location ->
             ( { model | location = location }, Cmd.none )
 
-        AircraftTimeoutMsg msg ->
-            case JD.decodeValue decodeTimeout msg of
+        AircraftTimeoutsMsg msg ->
+            case JD.decodeValue decodeTimeouts msg of
                 Ok msg ->
-                    ( { model | aircraft = Dict.remove msg.address model.aircraft }, Cmd.none )
+                    ( List.foldr (removeAircraftAfterTimeout) model msg.messages, Cmd.none )
 
                 Err err ->
                     Debug.log err
                         ( model, Cmd.none )
 
-        AircraftAgeMsg msg ->
-            case JD.decodeValue decodeAge msg of
+        AircraftAgesMsg msg ->
+            case JD.decodeValue decodeAges msg of
                 Ok msg ->
-                    case Dict.get msg.address model.aircraft of
-                        Just a ->
-                            ( { model | aircraft = Dict.insert msg.address { a | age = msg.age } model.aircraft }, Cmd.none )
-
-                        Nothing ->
-                            -- If we don't have the aircraft yet, ignore the age message
-                            ( model, Cmd.none )
+                    ( List.foldr (updateAircraftAge) model msg.messages, Cmd.none )
 
                 Err err ->
                     Debug.log err
                         ( model, Cmd.none )
 
-        AircraftMsg msg ->
-            case JD.decodeValue decodeAircraft msg of
+        AircraftStateVectorsMsg msg ->
+            case JD.decodeValue decodeStateVectors msg of
                 Ok msg ->
-                    ( { model | aircraft = Dict.insert msg.address msg model.aircraft }, Cmd.none )
+                    ( List.foldr (updateStateVector) model msg.messages, Cmd.none )
 
                 Err err ->
                     Debug.log err
@@ -174,9 +185,15 @@ subscriptions model =
         Phoenix.connect new_socket [ channel ]
 
 
-decodeAircraft : Decoder Aircraft
-decodeAircraft =
-    decode Aircraft
+decodeStateVectors : Decoder StateVectorList
+decodeStateVectors =
+    decode StateVectorList
+        |> JDP.required "messages" (JD.list decodeStateVector)
+
+
+decodeStateVector : Decoder StateVector
+decodeStateVector =
+    decode StateVector
         |> JDP.required "address" string
         |> JDP.required "callsign" string
         |> JDP.required "country" string
@@ -208,11 +225,23 @@ decodePosition =
         |> JDP.optional "lon" float 0.0
 
 
+decodeAges : Decoder AircraftAgeList
+decodeAges =
+    decode AircraftAgeList
+        |> JDP.required "messages" (JD.list decodeAge)
+
+
 decodeAge : Decoder AircraftAge
 decodeAge =
     decode AircraftAge
         |> JDP.required "address" string
         |> JDP.required "age" int
+
+
+decodeTimeouts : Decoder AircraftTimeoutList
+decodeTimeouts =
+    decode AircraftTimeoutList
+        |> JDP.required "messages" (JD.list decodeTimeout)
 
 
 decodeTimeout : Decoder AircraftTimeout
@@ -289,21 +318,21 @@ renderVr vr vr_dir =
         intToString vr
 
 
-aircraftRow : Aircraft -> Html msg
-aircraftRow aircraft =
+aircraftRow : StateVector -> Html msg
+aircraftRow vector =
     tr []
-        [ td [] [ text aircraft.address ]
-        , td [] [ text aircraft.country ]
-        , td [] [ text aircraft.registration ]
-        , td [] [ text aircraft.callsign ]
-        , td [] [ text aircraft.squawk ]
-        , td [] [ text (intToString aircraft.altitude) ]
-        , td [] [ text (intToString aircraft.velocity_kt) ]
-        , td [] [ text (renderVr aircraft.vr aircraft.vr_dir) ]
-        , td [] [ text (floatToString aircraft.distance) ]
-        , td [] [ text (intToHeading aircraft.heading) ]
-        , td [] [ text (floatToString aircraft.position.lat) ]
-        , td [] [ text (floatToString aircraft.position.lon) ]
-        , td [] [ text (intToString aircraft.msgs) ]
-        , td [] [ text (toString aircraft.age) ]
+        [ td [] [ text vector.address ]
+        , td [] [ text vector.country ]
+        , td [] [ text vector.registration ]
+        , td [] [ text vector.callsign ]
+        , td [] [ text vector.squawk ]
+        , td [] [ text (intToString vector.altitude) ]
+        , td [] [ text (intToString vector.velocity_kt) ]
+        , td [] [ text (renderVr vector.vr vector.vr_dir) ]
+        , td [] [ text (floatToString vector.distance) ]
+        , td [] [ text (intToHeading vector.heading) ]
+        , td [] [ text (floatToString vector.position.lat) ]
+        , td [] [ text (floatToString vector.position.lon) ]
+        , td [] [ text (intToString vector.msgs) ]
+        , td [] [ text (toString vector.age) ]
         ]

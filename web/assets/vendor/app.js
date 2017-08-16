@@ -11647,7 +11647,7 @@ var _user$project$App$intToHeading = function (heading) {
 	var headingString = _user$project$App$intToString(heading);
 	return _elm_lang$core$Native_Utils.eq(headingString, '') ? headingString : A2(_elm_lang$core$Basics_ops['++'], headingString, '°');
 };
-var _user$project$App$aircraftRow = function (aircraft) {
+var _user$project$App$aircraftRow = function (vector) {
 	return A2(
 		_elm_lang$html$Html$tr,
 		{ctor: '[]'},
@@ -11658,7 +11658,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(aircraft.address),
+					_0: _elm_lang$html$Html$text(vector.address),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
@@ -11668,7 +11668,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 					{ctor: '[]'},
 					{
 						ctor: '::',
-						_0: _elm_lang$html$Html$text(aircraft.country),
+						_0: _elm_lang$html$Html$text(vector.country),
 						_1: {ctor: '[]'}
 					}),
 				_1: {
@@ -11678,7 +11678,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 						{ctor: '[]'},
 						{
 							ctor: '::',
-							_0: _elm_lang$html$Html$text(aircraft.registration),
+							_0: _elm_lang$html$Html$text(vector.registration),
 							_1: {ctor: '[]'}
 						}),
 					_1: {
@@ -11688,7 +11688,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 							{ctor: '[]'},
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html$text(aircraft.callsign),
+								_0: _elm_lang$html$Html$text(vector.callsign),
 								_1: {ctor: '[]'}
 							}),
 						_1: {
@@ -11698,7 +11698,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 								{ctor: '[]'},
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html$text(aircraft.squawk),
+									_0: _elm_lang$html$Html$text(vector.squawk),
 									_1: {ctor: '[]'}
 								}),
 							_1: {
@@ -11709,7 +11709,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 									{
 										ctor: '::',
 										_0: _elm_lang$html$Html$text(
-											_user$project$App$intToString(aircraft.altitude)),
+											_user$project$App$intToString(vector.altitude)),
 										_1: {ctor: '[]'}
 									}),
 								_1: {
@@ -11720,7 +11720,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 										{
 											ctor: '::',
 											_0: _elm_lang$html$Html$text(
-												_user$project$App$intToString(aircraft.velocity_kt)),
+												_user$project$App$intToString(vector.velocity_kt)),
 											_1: {ctor: '[]'}
 										}),
 									_1: {
@@ -11731,7 +11731,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 											{
 												ctor: '::',
 												_0: _elm_lang$html$Html$text(
-													A2(_user$project$App$renderVr, aircraft.vr, aircraft.vr_dir)),
+													A2(_user$project$App$renderVr, vector.vr, vector.vr_dir)),
 												_1: {ctor: '[]'}
 											}),
 										_1: {
@@ -11742,7 +11742,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 												{
 													ctor: '::',
 													_0: _elm_lang$html$Html$text(
-														_user$project$App$floatToString(aircraft.distance)),
+														_user$project$App$floatToString(vector.distance)),
 													_1: {ctor: '[]'}
 												}),
 											_1: {
@@ -11753,7 +11753,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 													{
 														ctor: '::',
 														_0: _elm_lang$html$Html$text(
-															_user$project$App$intToHeading(aircraft.heading)),
+															_user$project$App$intToHeading(vector.heading)),
 														_1: {ctor: '[]'}
 													}),
 												_1: {
@@ -11764,7 +11764,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 														{
 															ctor: '::',
 															_0: _elm_lang$html$Html$text(
-																_user$project$App$floatToString(aircraft.position.lat)),
+																_user$project$App$floatToString(vector.position.lat)),
 															_1: {ctor: '[]'}
 														}),
 													_1: {
@@ -11775,7 +11775,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 															{
 																ctor: '::',
 																_0: _elm_lang$html$Html$text(
-																	_user$project$App$floatToString(aircraft.position.lon)),
+																	_user$project$App$floatToString(vector.position.lon)),
 																_1: {ctor: '[]'}
 															}),
 														_1: {
@@ -11786,7 +11786,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 																{
 																	ctor: '::',
 																	_0: _elm_lang$html$Html$text(
-																		_user$project$App$intToString(aircraft.msgs)),
+																		_user$project$App$intToString(vector.msgs)),
 																	_1: {ctor: '[]'}
 																}),
 															_1: {
@@ -11797,7 +11797,7 @@ var _user$project$App$aircraftRow = function (aircraft) {
 																	{
 																		ctor: '::',
 																		_0: _elm_lang$html$Html$text(
-																			_elm_lang$core$Basics$toString(aircraft.age)),
+																			_elm_lang$core$Basics$toString(vector.age)),
 																		_1: {ctor: '[]'}
 																	}),
 																_1: {ctor: '[]'}
@@ -12038,6 +12038,41 @@ var _user$project$App$view = function (model) {
 			}
 		});
 };
+var _user$project$App$updateStateVector = F2(
+	function (vector, model) {
+		return _elm_lang$core$Native_Utils.update(
+			model,
+			{
+				aircraft: A3(_elm_lang$core$Dict$insert, vector.address, vector, model.aircraft)
+			});
+	});
+var _user$project$App$updateAircraftAge = F2(
+	function (age, model) {
+		var _p0 = A2(_elm_lang$core$Dict$get, age.address, model.aircraft);
+		if (_p0.ctor === 'Just') {
+			return _elm_lang$core$Native_Utils.update(
+				model,
+				{
+					aircraft: A3(
+						_elm_lang$core$Dict$insert,
+						age.address,
+						_elm_lang$core$Native_Utils.update(
+							_p0._0,
+							{age: age.age}),
+						model.aircraft)
+				});
+		} else {
+			return model;
+		}
+	});
+var _user$project$App$removeAircraftAfterTimeout = F2(
+	function (timeout, model) {
+		return _elm_lang$core$Native_Utils.update(
+			model,
+			{
+				aircraft: A2(_elm_lang$core$Dict$remove, timeout.address, model.aircraft)
+			});
+	});
 var _user$project$App$socket = function (location) {
 	var host = location.host;
 	return _saschatimme$elm_phoenix$Phoenix_Socket$init(
@@ -12045,23 +12080,6 @@ var _user$project$App$socket = function (location) {
 			_elm_lang$core$Basics_ops['++'],
 			'ws://',
 			A2(_elm_lang$core$Basics_ops['++'], host, '/socket/websocket')));
-};
-var _user$project$App$defaultAircraft = {
-	address: '',
-	callsign: '',
-	country: '',
-	registration: '',
-	squawk: '',
-	altitude: 0,
-	vr: 0,
-	vr_dir: '',
-	velocity_kt: 0,
-	category: {set: '', category: ''},
-	heading: 0,
-	position: {lat: 0.0, lon: 0.0},
-	distance: 0.0,
-	msgs: 0,
-	age: 0
 };
 var _user$project$App$Model = F2(
 	function (a, b) {
@@ -12102,6 +12120,9 @@ var _user$project$App$decodePosition = A4(
 		_elm_lang$core$Json_Decode$float,
 		0.0,
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$AircraftPosition)));
+var _user$project$App$AircraftAgeList = function (a) {
+	return {messages: a};
+};
 var _user$project$App$AircraftAge = F2(
 	function (a, b) {
 		return {address: a, age: b};
@@ -12115,6 +12136,14 @@ var _user$project$App$decodeAge = A3(
 		'address',
 		_elm_lang$core$Json_Decode$string,
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$AircraftAge)));
+var _user$project$App$decodeAges = A3(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+	'messages',
+	_elm_lang$core$Json_Decode$list(_user$project$App$decodeAge),
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$AircraftAgeList));
+var _user$project$App$AircraftTimeoutList = function (a) {
+	return {messages: a};
+};
 var _user$project$App$AircraftTimeout = function (a) {
 	return {address: a};
 };
@@ -12123,7 +12152,15 @@ var _user$project$App$decodeTimeout = A3(
 	'address',
 	_elm_lang$core$Json_Decode$string,
 	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$AircraftTimeout));
-var _user$project$App$Aircraft = function (a) {
+var _user$project$App$decodeTimeouts = A3(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+	'messages',
+	_elm_lang$core$Json_Decode$list(_user$project$App$decodeTimeout),
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$AircraftTimeoutList));
+var _user$project$App$StateVectorList = function (a) {
+	return {messages: a};
+};
+var _user$project$App$StateVector = function (a) {
 	return function (b) {
 		return function (c) {
 			return function (d) {
@@ -12154,7 +12191,7 @@ var _user$project$App$Aircraft = function (a) {
 		};
 	};
 };
-var _user$project$App$decodeAircraft = A3(
+var _user$project$App$decodeStateVector = A3(
 	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 	'age',
 	_elm_lang$core$Json_Decode$int,
@@ -12219,11 +12256,16 @@ var _user$project$App$decodeAircraft = A3(
 															_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 															'address',
 															_elm_lang$core$Json_Decode$string,
-															_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$Aircraft))))))))))))))));
+															_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$StateVector))))))))))))))));
+var _user$project$App$decodeStateVectors = A3(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+	'messages',
+	_elm_lang$core$Json_Decode$list(_user$project$App$decodeStateVector),
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$App$StateVectorList));
 var _user$project$App$update = F2(
 	function (msg, model) {
-		var _p0 = msg;
-		switch (_p0.ctor) {
+		var _p1 = msg;
+		switch (_p1.ctor) {
 			case 'None':
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 			case 'UrlChange':
@@ -12231,74 +12273,49 @@ var _user$project$App$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{location: _p0._0}),
+						{location: _p1._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
-			case 'AircraftTimeoutMsg':
-				var _p1 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeTimeout, _p0._0);
-				if (_p1.ctor === 'Ok') {
+			case 'AircraftTimeoutsMsg':
+				var _p2 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeTimeouts, _p1._0);
+				if (_p2.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
-							model,
-							{
-								aircraft: A2(_elm_lang$core$Dict$remove, _p1._0.address, model.aircraft)
-							}),
+						_0: A3(_elm_lang$core$List$foldr, _user$project$App$removeAircraftAfterTimeout, model, _p2._0.messages),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
-				} else {
-					return A2(
-						_elm_lang$core$Debug$log,
-						_p1._0,
-						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
-				}
-			case 'AircraftAgeMsg':
-				var _p2 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeAge, _p0._0);
-				if (_p2.ctor === 'Ok') {
-					var _p4 = _p2._0;
-					var _p3 = A2(_elm_lang$core$Dict$get, _p4.address, model.aircraft);
-					if (_p3.ctor === 'Just') {
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{
-									aircraft: A3(
-										_elm_lang$core$Dict$insert,
-										_p4.address,
-										_elm_lang$core$Native_Utils.update(
-											_p3._0,
-											{age: _p4.age}),
-										model.aircraft)
-								}),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					} else {
-						return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-					}
 				} else {
 					return A2(
 						_elm_lang$core$Debug$log,
 						_p2._0,
 						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
 				}
-			default:
-				var _p5 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeAircraft, _p0._0);
-				if (_p5.ctor === 'Ok') {
-					var _p6 = _p5._0;
+			case 'AircraftAgesMsg':
+				var _p3 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeAges, _p1._0);
+				if (_p3.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
-							model,
-							{
-								aircraft: A3(_elm_lang$core$Dict$insert, _p6.address, _p6, model.aircraft)
-							}),
+						_0: A3(_elm_lang$core$List$foldr, _user$project$App$updateAircraftAge, model, _p3._0.messages),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
 					return A2(
 						_elm_lang$core$Debug$log,
-						_p5._0,
+						_p3._0,
+						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
+				}
+			default:
+				var _p4 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$App$decodeStateVectors, _p1._0);
+				if (_p4.ctor === 'Ok') {
+					return {
+						ctor: '_Tuple2',
+						_0: A3(_elm_lang$core$List$foldr, _user$project$App$updateStateVector, model, _p4._0.messages),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				} else {
+					return A2(
+						_elm_lang$core$Debug$log,
+						_p4._0,
 						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
 				}
 		}
@@ -12306,28 +12323,28 @@ var _user$project$App$update = F2(
 var _user$project$App$UrlChange = function (a) {
 	return {ctor: 'UrlChange', _0: a};
 };
-var _user$project$App$AircraftTimeoutMsg = function (a) {
-	return {ctor: 'AircraftTimeoutMsg', _0: a};
+var _user$project$App$AircraftTimeoutsMsg = function (a) {
+	return {ctor: 'AircraftTimeoutsMsg', _0: a};
 };
-var _user$project$App$AircraftAgeMsg = function (a) {
-	return {ctor: 'AircraftAgeMsg', _0: a};
+var _user$project$App$AircraftAgesMsg = function (a) {
+	return {ctor: 'AircraftAgesMsg', _0: a};
 };
-var _user$project$App$AircraftMsg = function (a) {
-	return {ctor: 'AircraftMsg', _0: a};
+var _user$project$App$AircraftStateVectorsMsg = function (a) {
+	return {ctor: 'AircraftStateVectorsMsg', _0: a};
 };
 var _user$project$App$channel = A3(
 	_saschatimme$elm_phoenix$Phoenix_Channel$on,
 	'timeout',
-	_user$project$App$AircraftTimeoutMsg,
+	_user$project$App$AircraftTimeoutsMsg,
 	A3(
 		_saschatimme$elm_phoenix$Phoenix_Channel$on,
 		'age',
-		_user$project$App$AircraftAgeMsg,
+		_user$project$App$AircraftAgesMsg,
 		A3(
 			_saschatimme$elm_phoenix$Phoenix_Channel$on,
-			'report',
-			_user$project$App$AircraftMsg,
-			_saschatimme$elm_phoenix$Phoenix_Channel$init('aircraft:reports'))));
+			'state_vector',
+			_user$project$App$AircraftStateVectorsMsg,
+			_saschatimme$elm_phoenix$Phoenix_Channel$init('aircraft:messages'))));
 var _user$project$App$subscriptions = function (model) {
 	var new_socket = _user$project$App$socket(model.location);
 	return A2(
