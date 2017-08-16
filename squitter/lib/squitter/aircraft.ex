@@ -331,7 +331,7 @@ defmodule Squitter.Aircraft do
     else
       if new_state.age > 0 do
         # If age is zero then we don't need to broadcast it
-        broadcast(:age, %{address: state.address, age: state.age}, state)
+        broadcast(:age, %{address: state.address, age: new_state.age}, state)
       end
       schedule_tick()
       {:noreply, new_state}
