@@ -23,14 +23,16 @@ defmodule Squitter.Web.ReportPusher do
     {:noreply, [], Map.delete(producers, from)}
   end
 
-
   def handle_events(reports, from, producers) do
     producers = Map.update!(producers, from, fn {pending, interval} ->
       {pending + length(reports), interval}
     end)
 
-    for {type, msg} <- reports do
-      Squitter.Web.Endpoint.broadcast!("aircraft:reports", to_string(type), msg)
+    groups = Enum.group_by(reports, fn({type, msg}) -> type end)
+
+    for {type, msgs} <- groups do
+      messages = Enum.map(msgs, fn({_, msg}) -> msg end)
+      Squitter.Web.Endpoint.broadcast!("aircraft:messages", to_string(type), %{messages: messages})
     end
 
     {:noreply, [], producers}
