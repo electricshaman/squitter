@@ -51,7 +51,7 @@ defmodule Squitter.Aircraft do
     case handle_msg(msg, state) do
       {:ok, new_state} ->
         new_state = set_received(new_state)
-        broadcast(:report, build_report(new_state), new_state)
+        broadcast(:state_vector, build_state_vector(new_state), new_state)
         {:noreply, new_state}
       {:error, :invalid_crc} ->
         {:noreply, state}
@@ -66,8 +66,8 @@ defmodule Squitter.Aircraft do
     {:noreply, %{state | timeout_enabled: false}}
   end
 
-  def handle_call(:report, _from, state) do
-    reply = build_report(state)
+  def handle_call(:state_vector, _from, state) do
+    reply = build_state_vector(state)
     {:reply, {:ok, reply}, state}
   end
 
@@ -182,7 +182,7 @@ defmodule Squitter.Aircraft do
     {:ok, state}
   end
 
-  defp build_report(state) do
+  defp build_state_vector(state) do
     state
     |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
       :heading, :vr, :vr_dir, :address, :age, :distance, :country])
