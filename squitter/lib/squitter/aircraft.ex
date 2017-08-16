@@ -71,7 +71,7 @@ defmodule Squitter.Aircraft do
     {:reply, {:ok, reply}, state}
   end
 
-  defp handle_msg(%{crc: :invalid}, state) do
+  defp handle_msg(%{crc: :invalid}, _state) do
     # Ignore messages with invalid CRC
     {:error, :invalid_crc}
   end
@@ -115,6 +115,11 @@ defmodule Squitter.Aircraft do
   end
 
   defp handle_msg(%{tc: {:surface_pos, _}}, state) do
+    # TODO
+    {:ok, state}
+  end
+
+  defp handle_msg(%{tc: :no_position_info}, state) do
     # TODO
     {:ok, state}
   end
@@ -354,11 +359,11 @@ defmodule Squitter.Aircraft do
     cond do
       type in [:timeout, :terminated] ->
         # Always broadcast timeouts and terminations
-        Squitter.ReportCollector.report({type, msg})
+        Squitter.ReportCollector.report(type, msg)
       true ->
         # Everything else: broadcast only for aircraft which we've received more than 1 message
         if state.msgs >= 2 do
-          Squitter.ReportCollector.report({type, msg})
+          Squitter.ReportCollector.report(type, msg)
         end
     end
   end
