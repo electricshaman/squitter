@@ -9,9 +9,11 @@ defmodule Squitter.AircraftLookup do
              :other_name_4, :other_name_5, :expiration_date, :unique_id, :kit_mfr,
              :kit_model, :mode_s_code_hex]
 
-  @app Mix.Project.config[:app]
-  @faa_master_file Path.join("faa_db", "MASTER.txt")
-  @table :aircraft_lookup
+  @priv_dir         :code.priv_dir(Mix.Project.config[:app])
+  @faa_db_dir       Path.join(@priv_dir, "faa_db")
+  @faa_db_zip       Path.join(@faa_db_dir, "ReleasableAircraft.zip")
+  @faa_master_file  Path.join(@faa_db_dir, "MASTER.txt")
+  @table            :aircraft_lookup
 
   def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -26,9 +28,9 @@ defmodule Squitter.AircraftLookup do
   end
 
   def init(_) do
+    unzip_faa_db()
     _ = :ets.new(@table, [:private, :named_table])
-    master_file_path = Path.join(:code.priv_dir(@app), @faa_master_file)
-    File.stream!(master_file_path)
+    File.stream!(@faa_master_file)
     |> Stream.drop(1)
     |> Stream.each(fn(line) ->
          record = transform_line(line)
@@ -37,6 +39,10 @@ defmodule Squitter.AircraftLookup do
     |> Stream.run
 
     {:ok, %{}}
+  end
+
+  def unzip_faa_db do
+    :zip.unzip(to_charlist(@faa_db_zip), [:keep_old_files, {:cwd, @faa_db_dir}])
   end
 
   def handle_call({:get_reg, address}, _from, state) do
