@@ -329,7 +329,10 @@ defmodule Squitter.Aircraft do
     if state.timeout_enabled && timeout_expired?(new_state) do
       {:stop, {:shutdown, :timeout}, new_state}
     else
-      broadcast(:age, %{address: state.address, age: state.age}, state)
+      if new_state.age > 0 do
+        # If age is zero then we don't need to broadcast it
+        broadcast(:age, %{address: state.address, age: state.age}, state)
+      end
       schedule_tick()
       {:noreply, new_state}
     end
