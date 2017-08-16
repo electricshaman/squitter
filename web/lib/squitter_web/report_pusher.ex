@@ -6,7 +6,7 @@ defmodule Squitter.Web.ReportPusher do
   end
 
   def init(_) do
-    {:consumer, %{}, subscribe_to: [{Squitter.ReportCollector, interval: 1000}]}
+    {:consumer, %{}, subscribe_to: [{Squitter.ReportCollector, max_demand: 1500, interval: 1000}]}
   end
 
   def handle_subscribe(:producer, opts, from, producers) do
