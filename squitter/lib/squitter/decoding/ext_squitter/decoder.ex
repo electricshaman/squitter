@@ -10,7 +10,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   alias Squitter.Decoding.ExtSquitter.{
     TypeCode,
     Callsign,
-    PositionBaroAlt,
+    AirbornePosition,
     AircraftCategory,
     GroundSpeed,
     AirSpeed
@@ -59,7 +59,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   @doc """
   Decode the airborne position message.
   """
-  def decode_type({:airborne_pos_baro_alt, tc}, msg, index) do
+  def decode_type({alt_type, tc}, msg, index) when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] do
     <<_       :: @head,
       ss      :: 2,
       nicsb   :: 1,
@@ -106,16 +106,18 @@ defmodule Squitter.Decoding.ExtSquitter do
         ModeS.gillham_altitude(n)
       end
 
-    %PositionBaroAlt{
+    %AirbornePosition{
       index: index,
       tc: tc,
       ss: ss,
       nic_sb: nicsb,
       alt: alt,
+      alt_type: alt_type,
       utc_time: to_bool(t),
       flag: f,
       lat_cpr: lat_cpr,
-      lon_cpr: lon_cpr} |> assign_nic
+      lon_cpr: lon_cpr}
+    |> assign_nic
   end
 
   @doc """
@@ -260,7 +262,7 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: https://adsb-decode-guide.readthedocs.io/en/latest/content/nicnac.html
   """
-  defp assign_nic(%{tc: tc, nic_sa: nicsa, nic_sb: nicsb} = pos) do
+  def assign_nic(%{tc: tc, nic_sa: nicsa, nic_sb: nicsb} = pos) do
     {nic, rc} =
       cond do
         tc == 9 && nicsb == 0 ->
@@ -296,5 +298,4 @@ defmodule Squitter.Decoding.ExtSquitter do
       end
     %{pos | nic: nic, rc: rc}
   end
-
 end

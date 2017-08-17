@@ -90,13 +90,20 @@ defmodule Squitter.Aircraft do
   end
 
   # position with even flag
-  defp handle_msg(%{tc: {:airborne_pos_baro_alt, _}, type_msg: %{flag: flag} = pos}, state) when band(flag, 1) == 0 do
-    calculate_position(%{state | altitude: pos.alt, even_pos: pos})
+  defp handle_msg(%{tc: {alt_type, _}, type_msg: %{flag: flag, alt: alt} = pos}, state)
+  when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] and band(flag, 1) == 0 do
+    calculate_position(%{state | altitude: alt, even_pos: pos})
   end
 
   # position with odd flag
-  defp handle_msg(%{tc: {:airborne_pos_baro_alt, _}, type_msg: %{flag: flag} = pos}, state) when band(flag, 1) == 1 do
-    calculate_position(%{state | altitude: pos.alt, odd_pos: pos})
+  defp handle_msg(%{tc: {alt_type, _}, type_msg: %{flag: flag, alt: alt} = pos}, state)
+  when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] and band(flag, 1) == 1 do
+    calculate_position(%{state | altitude: alt, odd_pos: pos})
+  end
+
+  defp handle_msg(%{tc: :no_position_info}, state) do
+    # TODO
+    {:ok, state}
   end
 
   defp handle_msg(%{tc: :air_velocity, type_msg: %GroundSpeed{} = gs}, state) do
@@ -107,7 +114,7 @@ defmodule Squitter.Aircraft do
 
   defp handle_msg(%{tc: :air_velocity, type_msg: %AirSpeed{} = msg}, state) do
     heading = if msg.sign_hdg do
-      :erlang.trunc(:erlang.float(msg.hdg) / 1024.0 * 360.0)
+      trunc(:erlang.float(msg.hdg) / 1024.0 * 360.0)
     else
       0
     end
@@ -118,17 +125,7 @@ defmodule Squitter.Aircraft do
     {:ok, %{state | airspeed_type: as_type, velocity_kt: msg.as, heading: heading, vr: vr, vr_dir: vrdir, vr_src: vrsrc}}
   end
 
-  defp handle_msg(%{tc: {:airborne_pos_gnss_height, _code}}, state) do
-    # TODO
-    {:ok, state}
-  end
-
   defp handle_msg(%{tc: {:surface_pos, _}}, state) do
-    # TODO
-    {:ok, state}
-  end
-
-  defp handle_msg(%{tc: :no_position_info}, state) do
     # TODO
     {:ok, state}
   end
@@ -221,7 +218,7 @@ defmodule Squitter.Aircraft do
 
     h = if h < 0, do: h + 360, else: h
 
-    {:erlang.trunc(v), :erlang.trunc(h)}
+    {trunc(v), trunc(h)}
   end
 
   def calculate_vertical_rate(msg) do
@@ -252,90 +249,19 @@ defmodule Squitter.Aircraft do
   def vr_src(_other),
     do: :error
 
-  @cpr_max :math.pow(2, 17)
-
-  @nz 15
-  @air_d_lat_even 360.0 / (4 * @nz)
-  @air_d_lat_odd  360.0 / (4 * @nz - 1)
-
-  def latitude_index(cpr_even_lat, cpr_odd_lat) do
-    floor(59 * cpr_even_lat - 60 * cpr_odd_lat + 0.5)
-  end
-
-  def calculate_lat({cpr_lat_even, cpr_lat_odd}) do
-    cprlat_even = cpr_lat_even / @cpr_max
-    cprlat_odd = cpr_lat_odd / @cpr_max
-
-    j = latitude_index(cprlat_even, cprlat_odd)
-    lat_even = @air_d_lat_even * (rem(j, 60) + cprlat_even)
-    lat_odd = @air_d_lat_odd * (rem(j, 59) + cprlat_odd)
-
-    lat_even = if lat_even >= 270, do: lat_even - 360, else: lat_even
-    lat_odd = if lat_odd >= 270, do: lat_odd - 360, else: lat_odd
-
-    # Northern hemisphere
-    lat_even = if lat_even <= 0, do: lat_even + 360, else: lat_even
-    lat_odd = if lat_odd <=0, do: lat_odd + 360, else: lat_odd
-
-    {{:even, Float.round(lat_even, 5)}, {:odd, Float.round(lat_odd, 5)}}
-  end
-
-  def calculate_lon({parity, lat_val} = lat, {cpr_lon_even, cpr_lon_odd}) do
-    cprlon_even = cpr_lon_even / @cpr_max
-    cprlon_odd = cpr_lon_odd / @cpr_max
-
-    nll = nl(lat_val)
-    ni = max(nll - parity_case(lat, {0, 1}), 1)
-    m = floor(cprlon_even * (nll - 1) - cprlon_odd * nll + 0.5)
-
-    lon = (360.0/ni) * (rem(m, ni) + parity_case(lat, {cprlon_even, cprlon_odd}))
-    lon = if lon > 180, do: lon - 360, else: lon
-
-    {parity, Float.round(lon, 5)}
-  end
-
-  def parity_case({parity, _}, {even_value, odd_value}) do
-    case parity do
-      :even -> even_value
-      :odd -> odd_value
-    end
-  end
-
   def calculate_position(%{even_pos: even, odd_pos: odd} = state) when is_nil(even) or is_nil(odd) do
     {:ok, state}
   end
 
   def calculate_position(%{even_pos: even, odd_pos: odd} = state) do
-    lat_pair = calculate_lat({even.lat_cpr, odd.lat_cpr})
-    {lat_even, lat_odd} = lat_pair
-
-    if in_same_lat_zone?(lat_even, lat_odd) do
-      lon_pair = {even.lon_cpr, odd.lon_cpr}
-
-      # Continue computing position
-      if even.index > odd.index do
-        {_, lat} = lat_even
-        {_, lon} = calculate_lon(lat_even, lon_pair)
+    case Squitter.Decoding.CPR.airborne_position(even.lat_cpr, even.lon_cpr, odd.lat_cpr, odd.lon_cpr, odd.index > even.index) do
+      {:ok, {lat, lon}} ->
         distance = calculate_gcd({lat, lon}, state.site_location)
-        {:ok, %{state | lat: lat, lon: lon, distance: distance}}
-      else
-        {_, lat} = lat_odd
-        {_, lon} = calculate_lon(lat_odd, lon_pair)
-        distance = calculate_gcd({lat, lon}, state.site_location)
-        {:ok, %{state | lat: lat, lon: lon, distance: distance}}
-      end
-    else
-      #Logger.debug "Different latitude zones"
-      # Different latitude zones so we can't continue.  Stop and wait for more position messages
-      {:ok, state}
+        pos_history = [[lat, lon] | state.position_history] |> Enum.reverse
+        {:ok, %{state | lat: lat, lon: lon, distance: distance, position_history: pos_history}}
+      {:error, _} ->
+        {:ok, state}
     end
-  end
-
-  def in_sane_lat_zone?({_, lat1}, {_, lat2}) do
-    in_same_lat_zone?(lat1, lat2)
-  end
-  def in_same_lat_zone?(lat_even, lat_odd) do
-    nl(lat_even) == nl(lat_odd)
   end
 
   def handle_info(:tick, state) do
