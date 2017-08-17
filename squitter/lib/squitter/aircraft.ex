@@ -188,6 +188,11 @@ defmodule Squitter.Aircraft do
     {:ok, state}
   end
 
+  defp handle_msg(%{tc: :trajectory_change, type_msg: _}, state) do
+    # TODO
+    {:ok, state}
+  end
+
   defp handle_msg(other, state) do
     Logger.warn "Unhandled msg in #{state.address}: #{inspect other}"
     {:ok, state}
