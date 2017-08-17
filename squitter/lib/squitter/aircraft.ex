@@ -11,6 +11,7 @@ defmodule Squitter.Aircraft do
 
   @timeout_period_s   60
   @clock_s            1
+  @site               Application.get_env(:squitter, :site)
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
@@ -49,7 +50,6 @@ defmodule Squitter.Aircraft do
       registration: reg,
       squawk: "",
       distance: 0.0,
-      site_location: get_site_location(),
       position_history: [],
       timeout_enabled: true,
       last_received: System.monotonic_time(:seconds),
@@ -256,8 +256,13 @@ defmodule Squitter.Aircraft do
   def calculate_position(%{even_pos: even, odd_pos: odd} = state) do
     case Squitter.Decoding.CPR.airborne_position(even.lat_cpr, even.lon_cpr, odd.lat_cpr, odd.lon_cpr, odd.index > even.index) do
       {:ok, {lat, lon}} ->
-        distance = calculate_gcd({lat, lon}, state.site_location)
-        pos_history = [[lat, lon] | state.position_history] |> Enum.reverse
+        site = site_location()
+        distance = calculate_gcd({lat, lon}, site)
+
+        pos_history =
+          [[lat, lon] | state.position_history]
+          |> Enum.reverse
+
         {:ok, %{state | lat: lat, lon: lon, distance: distance, position_history: pos_history}}
       {:error, _} ->
         {:ok, state}
@@ -296,8 +301,11 @@ defmodule Squitter.Aircraft do
         # Always broadcast timeouts and terminations
         Squitter.ReportCollector.report(type, msg)
       true ->
-        # Everything else: broadcast only for aircraft which we've received more than 1 message
-        if state.msgs >= 2 do
+        # Everything else: broadcast only for aircraft which:
+        # - we've received more than 1 message
+        # - has position data
+        # - is within the site range limit
+        if state.msgs > 1 && length(state.position_history) > 0 && state.distance <= site_range_limit() do
           Squitter.ReportCollector.report(type, msg)
         end
     end
@@ -321,8 +329,12 @@ defmodule Squitter.Aircraft do
     Process.send_after(self(), :tick, @clock_s * 1000)
   end
 
-  defp get_site_location do
-    site = Application.get_env(:squitter, :site)
-    if is_nil(site), do: :unknown, else: Keyword.get(site, :location, :unknown)
+  defp site_location do
+    Keyword.get(@site, :location, :unknown)
+  end
+
+  defp site_range_limit do
+    # TODO: Move this to an ETS table so it can be changed dynamically
+    Keyword.get(@site, :range_limit_nm, 300)
   end
 end
