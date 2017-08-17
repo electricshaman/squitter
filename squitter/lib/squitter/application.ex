@@ -11,9 +11,12 @@ defmodule Squitter.Application do
 
     :pg2.create(:aircraft)
 
+    site = Application.get_env(:squitter, :site) || []
+
     children = [
       worker(Squitter.ReportCollector, []),
       registry_supervisor(Squitter.AircraftRegistry, :unique),
+      worker(Squitter.SiteServer, [site[:location], site[:range_limit]]),
       worker(Squitter.AircraftLookup, []),
       worker(Squitter.StatTracker, [10000]),
       supervisor(Squitter.AircraftSupervisor, []),

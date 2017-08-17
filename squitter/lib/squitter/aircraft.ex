@@ -6,12 +6,11 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
-  alias Squitter.AircraftLookup
+  alias Squitter.{AircraftLookup, SiteServer}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @timeout_period_s   60
   @clock_s            1
-  @site               Application.get_env(:squitter, :site)
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
@@ -261,8 +260,8 @@ defmodule Squitter.Aircraft do
   def calculate_position(%{even_pos: even, odd_pos: odd} = state) do
     case Squitter.Decoding.CPR.airborne_position(even.lat_cpr, even.lon_cpr, odd.lat_cpr, odd.lon_cpr, odd.index > even.index) do
       {:ok, {lat, lon}} ->
-        site = site_location()
-        distance = calculate_gcd({lat, lon}, site)
+        {:ok, site_location} = SiteServer.location()
+        distance = calculate_gcd({lat, lon}, site_location)
 
         pos_history =
           [[lat, lon] | state.position_history]
@@ -310,7 +309,8 @@ defmodule Squitter.Aircraft do
         # - we've received more than 1 message
         # - has position data
         # - is within the site range limit
-        if state.msgs > 1 && length(state.position_history) > 0 && state.distance <= site_range_limit() do
+        {:ok, range_limit} = SiteServer.range_limit()
+        if state.msgs > 1 && length(state.position_history) > 0 && state.distance <= range_limit do
           Squitter.ReportCollector.report(type, msg)
         end
     end
@@ -332,14 +332,5 @@ defmodule Squitter.Aircraft do
 
   defp schedule_tick do
     Process.send_after(self(), :tick, @clock_s * 1000)
-  end
-
-  defp site_location do
-    Keyword.get(@site, :location, :unknown)
-  end
-
-  defp site_range_limit do
-    # TODO: Move this to an ETS table so it can be changed dynamically
-    Keyword.get(@site, :range_limit_nm, 300)
   end
 end
