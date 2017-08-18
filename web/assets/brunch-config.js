@@ -21,9 +21,8 @@ exports.config = {
     },
     stylesheets: {
       order: {
-        before: [
-          "css/phoenix.css",
-          "css/app.css"
+        after: [
+          "assets/css/app.css"
         ]
       },
       joinTo: "css/app.css"
@@ -48,7 +47,7 @@ exports.config = {
   // Phoenix paths configuration
   paths: {
     // Dependencies and current project directories to watch
-    watched: ["static", "css", "js", "elm", "vendor"],
+    watched: ["static", "css", "js", "elm"],
     // Where to compile files to
     public: "../priv/static"
   },
@@ -57,8 +56,8 @@ exports.config = {
   plugins: {
     elmBrunch: {
       elmFolder: "elm",
-      mainModules: ["App.elm"],
-      outputFolder: "../vendor"
+      mainModules: ["Aircraft.elm"],
+      outputFolder: "../js"
     },
     babel: {
       // Do not use ES6 compiler in vendor code

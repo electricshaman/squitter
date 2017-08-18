@@ -11,7 +11,8 @@
 //
 // If you no longer want to use a dependency, remember
 // to also remove its path from "config.paths.watched".
-import "phoenix_html"
+import "phoenix_html";
+import Elm from "./aircraft";
 
 // Import local files
 //
@@ -20,5 +21,7 @@ import "phoenix_html"
 
 // import socket from "./socket"
 
-const node = document.getElementById('elm-container');
-const elmApp = Elm.App.embed(node);
+const aircraftNode = document.getElementById('aircraft-container');
+if (aircraftNode) {
+  Elm.App.embed(aircraftNode);
+}
