@@ -37,3 +37,8 @@
 #aircraft-table {
   font-size: 12px;
 }
+
+body, html, main, #liveMap {
+  height: 100%;
+  width: 100%;
+}
