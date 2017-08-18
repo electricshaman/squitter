@@ -3,6 +3,7 @@ defmodule Squitter.Web.UserSocket do
 
   ## Channels
   channel "aircraft:*", Squitter.Web.AircraftChannel
+  channel "map:*", Squitter.Web.MapChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
