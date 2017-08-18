@@ -29,8 +29,10 @@ defmodule Squitter.AircraftLookup do
   end
 
   def init(_) do
-    unzip_faa_db()
-    load_faa_db()
+    {zip_time, _} = :timer.tc(&unzip_faa_db/0)
+    Logger.debug "Unzipping the FAA database took #{trunc(zip_time/1000)} milliseconds"
+    {load_time, _} = :timer.tc(&load_faa_db/0)
+    Logger.debug "Loading the FAA database took #{trunc(load_time/1000)} milliseconds"
     {:ok, %{}}
   end
 
@@ -70,15 +72,16 @@ defmodule Squitter.AircraftLookup do
   defp load_faa_db do
     Logger.debug("Loading FAA registration database into ETS")
 
-    _ = :ets.new(@table, [:private, :named_table])
+    _ = :ets.new(@table, [:public, {:write_concurrency, true}, :named_table])
 
     File.stream!(@faa_master_file)
     |> Stream.drop(1)
-    |> Stream.each(fn(line) ->
+    |> Flow.from_enumerable()
+    |> Flow.each(fn(line) ->
          record = transform_line(line)
          true = :ets.insert_new(@table, {record.mode_s_code_hex, record})
        end)
-    |> Stream.run
+    |> Flow.run
   end
 
   defp map_field(field, index, record) do
