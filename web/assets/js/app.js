@@ -14,14 +14,7 @@
 import "phoenix_html";
 import L from 'leaflet';
 import Elm from "./aircraft";
-import Map from './map.js';
-
-// Import local files
-//
-// Local files can be imported directly using relative
-// paths "./socket" or full ones "web/static/js/socket".
-
-// import socket from "./socket"
+import Map from './map';
 
 const aircraftNode = document.getElementById('aircraft-container');
 if (aircraftNode) {
