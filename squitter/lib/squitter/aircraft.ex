@@ -201,7 +201,7 @@ defmodule Squitter.Aircraft do
     state
     |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
       :heading, :vr, :vr_dir, :address, :age, :distance, :country])
-    |> Map.put(:position, %{lat: state.lat, lon: state.lon})
+    |> Map.put(:latlon, state.latlon)
   end
 
   def calculate_vector(msg) do

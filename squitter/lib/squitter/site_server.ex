@@ -1,7 +1,7 @@
 defmodule Squitter.SiteServer do
   use GenServer
 
-  @default_location     {40.7950914, -98.9153411} # Somewhere in Kansas
+  @default_location     [40.7950914, -98.9153411] # Somewhere in Kansas
   @default_range_limit  300 # NM
 
   def start_link(location, range_limit) do

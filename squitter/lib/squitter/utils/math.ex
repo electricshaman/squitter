@@ -23,9 +23,9 @@ defmodule Squitter.Utils.Math do
   Calculate great circle distance between `coord1` and `coord2`
   """
   def calculate_gcd(coord1, coord2, unit \\ :NM)
-  def calculate_gcd({_lat0, _lon0}, :unknown, _unit),
+  def calculate_gcd([_lat0, _lon0], :unknown, _unit),
     do: 0.0
-  def calculate_gcd({lat0, lon0}, {lat1, lon1}, unit) do
+  def calculate_gcd([lat0, lon0], [lat1, lon1], unit) do
     lat0 = lat0 * pi() / 180.0
     lon0 = lon0 * pi() / 180.0
     lat1 = lat1 * pi() / 180.0

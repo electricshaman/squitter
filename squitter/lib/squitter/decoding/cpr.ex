@@ -54,7 +54,7 @@ defmodule Squitter.Decoding.CPR do
       # Renormalize longitude to -180..180
       lon = lon - (floor((lon + 180) / 360) * 360)
 
-      {:ok, {Float.round(lat, 6), Float.round(lon, 6)}}
+      {:ok, [Float.round(lat, 6), Float.round(lon, 6)]}
     end
   end
 

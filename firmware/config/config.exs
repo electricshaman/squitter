@@ -46,7 +46,7 @@ config :squitter, :decoding,
   dump1090_path: "dump1090"
 
 config :squitter, :site,
-  location: {35.4690, -97.5085},
+  location: [35.4690, -97.5085],
   range_limit: 1000
 
 # import_config "#{Mix.Project.config[:target]}.exs"
