@@ -6,11 +6,13 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
-  alias Squitter.{AircraftLookup, SiteServer}
+  alias Squitter.{AircraftLookup, SiteServer, Decoding.CPR}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
-  @timeout_period_s   60
-  @clock_s            1
+  @air_pos_delta_max_s  10.0
+  @warn_pos_delta_nm    10.0
+  @timeout_period_s     60
+  @clock_s              1
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
@@ -36,10 +38,9 @@ defmodule Squitter.Aircraft do
       country: country,
       altitude: 0,
       callsign: "",
-      lat: 0.0,
-      lon: 0.0,
-      even_pos: nil,
-      odd_pos: nil,
+      latlon: nil,
+      last_even_position: nil,
+      last_odd_position: nil,
       velocity_kt: 0,
       airspeed_type: nil,
       heading: nil,
@@ -89,15 +90,15 @@ defmodule Squitter.Aircraft do
   end
 
   # position with even flag
-  defp handle_msg(%{tc: {alt_type, _}, type_msg: %{flag: flag, alt: alt} = pos}, state)
+  defp handle_msg(%{tc: {alt_type, _}, time: time, type_msg: %{flag: flag, alt: alt} = pos}, state)
   when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] and band(flag, 1) == 0 do
-    calculate_position(%{state | altitude: alt, even_pos: pos})
+    calculate_position(%{state | altitude: alt, last_even_position: {time, pos}})
   end
 
   # position with odd flag
-  defp handle_msg(%{tc: {alt_type, _}, type_msg: %{flag: flag, alt: alt} = pos}, state)
+  defp handle_msg(%{tc: {alt_type, _}, time: time, type_msg: %{flag: flag, alt: alt} = pos}, state)
   when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] and band(flag, 1) == 1 do
-    calculate_position(%{state | altitude: alt, odd_pos: pos})
+    calculate_position(%{state | altitude: alt, last_odd_position: {time, pos}})
   end
 
   defp handle_msg(%{tc: :no_position_info}, state) do
@@ -253,21 +254,37 @@ defmodule Squitter.Aircraft do
   def vr_src(_other),
     do: :error
 
-  def calculate_position(%{even_pos: even, odd_pos: odd} = state) when is_nil(even) or is_nil(odd) do
+  def calculate_position(%{last_even_position: even, last_odd_position: odd} = state) when is_nil(even) or is_nil(odd) do
+    # We're missing one of the two messages so we can't calculate the position yet
     {:ok, state}
   end
 
-  def calculate_position(%{even_pos: even, odd_pos: odd} = state) do
-    case Squitter.Decoding.CPR.airborne_position(even.lat_cpr, even.lon_cpr, odd.lat_cpr, odd.lon_cpr, odd.index > even.index) do
-      {:ok, {lat, lon}} ->
-        {:ok, site_location} = SiteServer.location()
-        distance = calculate_gcd({lat, lon}, site_location)
+  def calculate_position(%{last_even_position: {even_time, even}, last_odd_position: {odd_time, odd}} = state) do
+    fflag? = odd_time > even_time
 
-        pos_history =
-          [[lat, lon] | state.position_history]
-          |> Enum.reverse
+    with :ok <- check_air_pos_msg_delta(even_time, odd_time),
+         {:ok, latlon} <- decode_airborne_cpr(even, odd, fflag?) do
 
-        {:ok, %{state | lat: lat, lon: lon, distance: distance, position_history: pos_history}}
+      check_distance_from_last_pos(latlon, state.latlon, state)
+
+      {:ok, site_location} = SiteServer.location()
+      distance = calculate_gcd(latlon, site_location)
+
+      pos_history =
+        [latlon | state.position_history]
+        |> Enum.reverse
+
+      {:ok, %{state | latlon: latlon, distance: distance, position_history: pos_history}}
+    else
+      {:error, :air_pos_msg_delta} ->
+        # More than X seconds between messages, clear the oldest one and bail out.
+        if fflag? do
+          # Odd is newer, clear the even message.
+          {:ok, %{state | last_even_position: nil}}
+        else
+          # Even is newer, clear the odd message.
+          {:ok, %{state | last_odd_position: nil}}
+        end
       {:error, _} ->
         {:ok, state}
     end
@@ -298,6 +315,32 @@ defmodule Squitter.Aircraft do
   end
 
   # Private helpers
+
+  defp check_distance_from_last_pos(current_pos, previous_pos, state) do
+    if !is_nil(previous_pos) do
+      # Check distance from last position
+      pos_delta = calculate_gcd(current_pos, previous_pos)
+      if pos_delta > @warn_pos_delta_nm do
+        Logger.warn """
+        [#{state.address}:#{state.callsign}] Current position #{inspect current_pos} is over #{@warn_pos_delta_nm} NM
+        from last position of #{inspect previous_pos} (#{pos_delta} NM)
+        """
+      end
+    end
+  end
+
+  defp decode_airborne_cpr(even, odd, fflag?) do
+    CPR.airborne_position(even.lat_cpr, even.lon_cpr, odd.lat_cpr, odd.lon_cpr, fflag?)
+  end
+
+  defp check_air_pos_msg_delta(even_time, odd_time) do
+    receipt_delta_s = abs(odd_time - even_time) / 1_000_000
+    if receipt_delta_s >= @air_pos_delta_max_s do
+      {:error, :air_pos_msg_delta}
+    else
+      :ok
+    end
+  end
 
   defp broadcast(type, msg, state) when is_atom(type) do
     cond do

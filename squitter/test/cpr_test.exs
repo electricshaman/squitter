@@ -7,7 +7,7 @@ defmodule SquitterCPRTests do
 
   test "decodes global position correctly for even messages" do
     for {even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, even_lat, even_lon, _, _} <- @global_airborne_cases do
-      {:ok, {lat, lon}} = CPR.airborne_position(even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, 0)
+      {:ok, [lat, lon]} = CPR.airborne_position(even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, false)
 
       assert abs(lat - even_lat) < 1.0e-6
       assert abs(lon - even_lon) < 1.0e-6
@@ -16,7 +16,7 @@ defmodule SquitterCPRTests do
 
   test "decodes global position correctly for odd messages" do
     for {even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, _, _, odd_lat, odd_lon} <- @global_airborne_cases do
-      {:ok, {lat, lon}} = CPR.airborne_position(even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, 1)
+      {:ok, [lat, lon]} = CPR.airborne_position(even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, true)
 
       assert abs(lat - odd_lat) < 1.0e-6
       assert abs(lon - odd_lon) < 1.0e-6

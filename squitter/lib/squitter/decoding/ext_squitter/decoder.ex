@@ -16,9 +16,9 @@ defmodule Squitter.Decoding.ExtSquitter do
     AirSpeed
   }
 
-  defstruct [:df, :tc, :ca, :icao, :msg, :pi, :crc, :type_msg, :index]
+  defstruct [:df, :tc, :ca, :icao, :msg, :pi, :crc, :type_msg, :time]
 
-  def decode(<<df :: 5, ca :: 3, _icao :: 3-bytes, data :: 7-bytes, pi :: 24-unsigned>> = msg, index) when byte_size(msg) == 14 and df in @df do
+  def decode(time, <<df :: 5, ca :: 3, _icao :: 3-bytes, data :: 7-bytes, pi :: 24-unsigned>> = msg) when byte_size(msg) == 14 and df in @df do
     checksum = ModeS.checksum(msg, 112)
     icao_address = ModeS.icao_address(msg, checksum)
 
@@ -26,30 +26,29 @@ defmodule Squitter.Decoding.ExtSquitter do
     type = TypeCode.decode(tc)
 
     %__MODULE__{
-      index: index,
+      time: time,
       df: df,
       tc: type,
-      type_msg: decode_type(type, msg, index),
+      type_msg: decode_type(type, msg),
       ca: ca,
       icao: icao_address,
       msg: msg,
       pi: pi,
-      crc: (if checksum == pi, do: :valid, else: :invalid),
-    }
+      crc: (if checksum == pi, do: :valid, else: :invalid)}
   end
 
-  def decode(<<df :: 5, _ :: bits>> = msg, index) when df in @df do
+  def decode(time, <<df :: 5, _ :: bits>> = msg) when df in @df do
     Logger.warn "Unrecognized ADS-B message (df #{inspect df}: #{inspect msg}"
     %__MODULE__{
       df: df,
-      index: index,
+      time: time,
       msg: msg}
   end
 
   @doc """
   Decode the aircraft identification message.
   """
-  def decode_type({:aircraft_id, tc}, <<_ :: @head, cat :: 3, cs :: 6-bytes, _ :: binary>>, _index) do
+  def decode_type({:aircraft_id, tc}, <<_ :: @head, cat :: 3, cs :: 6-bytes, _ :: binary>>) do
     callsign = (for <<c :: 6 <- cs>>, into: <<>>, do: Callsign.character(c)) |> String.trim
 
     %{aircraft_cat: AircraftCategory.decode(tc, cat),
@@ -59,7 +58,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   @doc """
   Decode the airborne position message.
   """
-  def decode_type({alt_type, tc}, msg, index) when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] do
+  def decode_type({alt_type, tc}, msg) when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] do
     <<_       :: @head,
       ss      :: 2,
       nicsb   :: 1,
@@ -107,7 +106,6 @@ defmodule Squitter.Decoding.ExtSquitter do
       end
 
     %AirbornePosition{
-      index: index,
       tc: tc,
       ss: ss,
       nic_sb: nicsb,
@@ -143,7 +141,7 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: http://adsb-decode-guide.readthedocs.io/en/latest/content/airborne-velocity.html
   """
-  def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>, _index) when st in [1, 2] do
+  def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>) when st in [1, 2] do
     <<ic      :: 1,
       resv_a  :: 1,
       nac     :: 3,
@@ -200,7 +198,7 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: http://adsb-decode-guide.readthedocs.io/en/latest/content/airborne-velocity.html
   """
-  def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>, _index) when st in [3, 4] do
+  def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>) when st in [3, 4] do
     <<ic      :: 1,
       resv_a  :: 1,
       nac     :: 3,
@@ -234,7 +232,7 @@ defmodule Squitter.Decoding.ExtSquitter do
     }
   end
 
-  def decode_type(_type, _msg, _index) do
+  def decode_type(_type, _msg) do
     # TODO: parse aircraft status, operational status, target state status
     #Logger.debug "Missed parsing #{inspect type}: #{inspect msg}"
     %{}

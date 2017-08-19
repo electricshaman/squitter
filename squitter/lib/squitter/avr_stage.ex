@@ -22,11 +22,16 @@ defmodule Squitter.AvrTcpStage do
   end
 
   def handle_info({:tcp, _socket, data}, %{buffer: buffer} = state) do
-    time = System.monotonic_time(:milliseconds)
+    time = System.monotonic_time(:microseconds)
+
     {frames, next_buffer} = AVR.split_frames(buffer ++ data)
-    frames = Enum.with_index(frames)
-             |> Enum.map(fn {f,i} -> {time+i, f} end)
-    {:noreply, frames, %{state | buffer: next_buffer}}
+
+    # Add a microsecond as a surrogate order
+    indexed_frames =
+      Enum.with_index(frames, time)
+      |> Enum.map(fn {frame, t} -> {t, frame} end)
+
+    {:noreply, indexed_frames, %{state | buffer: next_buffer}}
   end
 
   def handle_info({:tcp_closed, socket}, %{socket: socket} = state) do

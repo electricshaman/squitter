@@ -14,7 +14,7 @@ defmodule Squitter.DecoderStage do
   end
 
   def handle_events(events, _from, state) do
-    messages = for {index, frame} <- events, do: decode(frame, index)
+    messages = Enum.map(events, fn {time, frame} -> decode(time, frame) end)
     {:noreply, messages, state}
   end
 end

@@ -5,7 +5,7 @@ defmodule Squitter.Decoding.CPR do
 
   @cpr_max :math.pow(2, 17)
 
-  def airborne_position(even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, fflag) do
+  def airborne_position(even_cprlat, even_cprlon, odd_cprlat, odd_cprlon, fflag?) do
     air_dlat0 = 360.0 / 60.0
     air_dlat1 = 360.0 / 59.0
     lat0 = even_cprlat
@@ -35,18 +35,18 @@ defmodule Squitter.Decoding.CPR do
          :ok <- check_rlat_zones(rlat0, rlat1) do
 
       {lat, lon} =
-        if fflag == 1 do
+        if fflag? do
           # Odd packet
-          ni = n(rlat1, 1)
+          ni = n(rlat1, fflag?)
           m = trunc(floor((((lon0 * (nl(rlat1) - 1)) - (lon1 * nl(rlat1))) / @cpr_max) + 0.5))
-          rlon = dlon(rlat1, 1, false) * (cpr_mod(m, ni) + lon1 / @cpr_max)
+          rlon = dlon(rlat1, fflag?, false) * (cpr_mod(m, ni) + lon1 / @cpr_max)
           rlat = rlat1
           {rlat, rlon}
         else
           # Even packet
-          ni = n(rlat0, 0);
+          ni = n(rlat0, fflag?)
           m = trunc(floor((((lon0 * (nl(rlat0) - 1)) - (lon1 * nl(rlat0))) / @cpr_max) + 0.5))
-          rlon = dlon(rlat0, 0, false) * (cpr_mod(m, ni) + lon0 / @cpr_max);
+          rlon = dlon(rlat0, fflag?, false) * (cpr_mod(m, ni) + lon0 / @cpr_max);
           rlat = rlat0
           {rlat, rlon}
         end
@@ -81,19 +81,19 @@ defmodule Squitter.Decoding.CPR do
     if res < 0.0, do: res + b, else: res
   end
 
-  defp n(lat, fflag) do
-    nl = nl(lat) - (if fflag == 1, do: 1, else: 0)
+  defp n(lat, fflag?) do
+    nl = nl(lat) - (if fflag?, do: 1, else: 0)
     if nl < 1, do: 1, else: nl
   end
 
-  defp dlon(lat, fflag, surface) do
-    (if surface, do: 90, else: 360) / n(lat, fflag)
+  defp dlon(lat, fflag?, surface?) do
+    (if surface?, do: 90, else: 360) / n(lat, fflag?)
   end
 
   @doc """
   Number of longitude zones for the given latitude `lat`
   """
-  defp nl(lat) do
+  def nl(lat) do
     if lat < 0, do: nl(-lat)
 
     cond do
