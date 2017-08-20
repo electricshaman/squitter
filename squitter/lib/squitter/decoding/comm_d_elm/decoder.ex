@@ -1,10 +1,13 @@
 defmodule Squitter.Decoding.CommDElm do
   @df 24
 
-  defstruct [:df, :msg]
+  defstruct [:df, :msg, :time]
 
-  def decode(<<@df :: 5, _ :: bits>> = msg) do
-    %__MODULE__{df: @df, msg: msg}
+  def decode(time, <<@df :: 5, _ :: bits>> = msg) do
+    %__MODULE__{
+      df: @df,
+      msg: msg,
+      time: time}
   end
 
   def decode(other) do

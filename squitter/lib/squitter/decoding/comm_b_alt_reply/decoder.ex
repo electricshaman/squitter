@@ -1,10 +1,12 @@
 defmodule Squitter.Decoding.CommBAltitudeReply do
   @df 20
 
-  defstruct [:df, :msg]
+  defstruct [:df, :msg, :time]
 
-  def decode(<<@df :: 5, _ :: bits>> = msg) do
-    %__MODULE__{df: @df, msg: msg}
+  def decode(time, <<@df :: 5, _ :: bits>> = msg) do
+    %__MODULE__{df: @df,
+      time: time,
+      msg: msg}
   end
 
   def decode(other) do
