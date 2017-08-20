@@ -1,11 +1,7 @@
 defmodule Squitter.Decoding.ExtSquitter do
-  import Squitter.Decoding.Utils
-
   require Logger
-
-  @df   [17, 18]
-  @head 37
-
+  import Squitter.Decoding.Utils
+  alias Squitter.StatsTracker
   alias Squitter.Decoding.ModeS
   alias Squitter.Decoding.ExtSquitter.{
     TypeCode,
@@ -16,6 +12,9 @@ defmodule Squitter.Decoding.ExtSquitter do
     AirSpeed
   }
 
+  @df   [17, 18]
+  @head 37
+
   defstruct [:df, :tc, :ca, :icao, :msg, :pi, :crc, :type_msg, :time]
 
   def decode(time, <<df :: 5, ca :: 3, _icao :: 3-bytes, data :: 7-bytes, pi :: 24-unsigned>> = msg) when byte_size(msg) == 14 and df in @df do
@@ -24,6 +23,8 @@ defmodule Squitter.Decoding.ExtSquitter do
 
     <<tc :: 5, _rest :: bits>> = data
     type = TypeCode.decode(tc)
+
+    StatsTracker.count({:df, df, :decoded})
 
     %__MODULE__{
       time: time,
@@ -38,6 +39,8 @@ defmodule Squitter.Decoding.ExtSquitter do
   end
 
   def decode(time, <<df :: 5, _ :: bits>> = msg) when df in @df do
+    StatsTracker.count({:df, df, :decode_failed})
+
     Logger.warn "Unrecognized ADS-B message (df #{inspect df}: #{inspect msg}"
     %__MODULE__{
       df: df,

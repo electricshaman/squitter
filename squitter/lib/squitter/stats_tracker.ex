@@ -2,7 +2,7 @@ defmodule Squitter.StatsTracker do
   use GenServer
   require Logger
 
-  @buffer_size 500
+  @rate_buffer_size 500
 
   def start_link(clock) do
     GenServer.start_link(__MODULE__, [clock], name: __MODULE__)
@@ -11,8 +11,8 @@ defmodule Squitter.StatsTracker do
   def init([clock]) do
     Logger.debug "Starting up #{__MODULE__}"
 
-    counts= :array.new(@buffer_size, default: 0)
-    times = :array.new(@buffer_size, default: System.monotonic_time(:milliseconds))
+    counts = :array.new(@rate_buffer_size, default: 0)
+    times = :array.new(@rate_buffer_size, default: System.monotonic_time(:milliseconds))
 
     schedule_tick(clock)
 
@@ -32,9 +32,17 @@ defmodule Squitter.StatsTracker do
 
     counts = :array.set(state.position, received, state.counts)
     times = :array.set(state.position, time, state.times)
-    next_position = if state.position + 1 >= @buffer_size, do: 0, else: state.position + 1
+    next_position = if state.position + 1 >= @rate_buffer_size, do: 0, else: state.position + 1
 
     {:noreply, %{state | totals: new_totals, counts: counts, times: times, position: next_position}}
+  end
+
+  def handle_cast({:count, {type, count}}, state) do
+    new_totals =
+      Map.update(state.totals, type, count, fn current ->
+        count + current
+      end)
+    {:noreply, %{state | totals: new_totals}}
   end
 
   def handle_info(:tick, state) do
@@ -64,8 +72,23 @@ defmodule Squitter.StatsTracker do
 
   defp format_stats({rate, totals}) do
     ["rate=#{rate}/sec"|
-     Enum.map(totals, fn {k, v} -> "#{k}=#{v}" end)]
+     Enum.map(totals, fn {k, v} ->
+       key = format_total_key(k)
+       "#{key}=#{v}"
+     end)]
      |> Enum.join(",")
+  end
+
+  defp format_total_key(key) when is_tuple(key) do
+    format_total_key(Tuple.to_list(key))
+  end
+
+  defp format_total_key(key) when is_atom(key) do
+    to_string(key)
+  end
+
+  defp format_total_key(key) when is_list(key) do
+    Enum.join(key, ".")
   end
 
   defp schedule_tick(time) do
@@ -77,5 +100,9 @@ defmodule Squitter.StatsTracker do
   @spec dispatched({number(), map}) :: :ok
   def dispatched({_time, _counts} = event) do
     GenServer.cast(__MODULE__, {:dispatched, event})
+  end
+
+  def count(type, count \\ 1) do
+    GenServer.cast(__MODULE__, {:count, {type, count}})
   end
 end

@@ -1,5 +1,6 @@
 defmodule Squitter.Decoding.ShortAcas do
   alias Squitter.Decoding.ModeS
+  alias Squitter.StatsTracker
 
   @df 0
 
@@ -10,6 +11,8 @@ defmodule Squitter.Decoding.ShortAcas do
     checksum = ModeS.checksum(msg, 56)
     icao = ModeS.icao_address(msg, checksum)
 
+    StatsTracker.count({:df, @df, :decoded})
+
     %__MODULE__{
       df: @df,
       icao: icao,
@@ -19,6 +22,7 @@ defmodule Squitter.Decoding.ShortAcas do
   end
 
   def decode(_time, other) do
+    StatsTracker.count({:df, @df, :decode_failed})
     {:unknown, other}
   end
 end
