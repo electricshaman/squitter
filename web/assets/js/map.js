@@ -49,6 +49,12 @@ if (document.getElementById('liveMap')) {
     })
   })
 
+  channel.on("terminated", payload => {
+    payload.messages.forEach(msg => {
+      removeAircraftFromMap(msg.address, tracks, liveMap)
+    })
+  })
+
   function removeAircraftFromMap(address, track_hash, map) {
     let aircraft = track_hash[address]
     if (aircraft) {
