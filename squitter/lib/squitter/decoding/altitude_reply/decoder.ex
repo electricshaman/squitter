@@ -17,7 +17,7 @@ defmodule Squitter.Decoding.AltitudeReply do
       time: time}
   end
 
-  def decode(other) do
+  def decode(_time, other) do
     {:unknown, other}
   end
 end

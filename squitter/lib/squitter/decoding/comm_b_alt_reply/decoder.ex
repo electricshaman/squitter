@@ -9,7 +9,7 @@ defmodule Squitter.Decoding.CommBAltitudeReply do
       msg: msg}
   end
 
-  def decode(other) do
+  def decode(_time, other) do
     {:unknown, other}
   end
 end

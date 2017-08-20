@@ -18,7 +18,7 @@ defmodule Squitter.Decoding.ShortAcas do
       time: time}
   end
 
-  def decode(other) do
+  def decode(_time, other) do
     {:unknown, other}
   end
 end
