@@ -1,4 +1,4 @@
-defmodule Squitter.StatTracker do
+defmodule Squitter.StatsTracker do
   use GenServer
   require Logger
 

@@ -18,7 +18,7 @@ defmodule Squitter.Application do
       registry_supervisor(Squitter.AircraftRegistry, :unique),
       worker(Squitter.SiteServer, [site[:location], site[:range_limit]]),
       worker(Squitter.AircraftLookup, []),
-      worker(Squitter.StatTracker, [10000]),
+      worker(Squitter.StatsTracker, [10000]),
       supervisor(Squitter.AircraftSupervisor, []),
       supervisor(Squitter.DecodingSupervisor, [])
     ] |> List.flatten
