@@ -11,8 +11,8 @@ defmodule Squitter.StatsTracker do
   def init([clock]) do
     Logger.debug "Starting up #{__MODULE__}"
 
-    {:ok, counts} = RingBuffer.new(@buffer_size, 0)
-    {:ok, times} = RingBuffer.new(@buffer_size, System.monotonic_time(:milliseconds))
+    counts= :array.new(@buffer_size, default: 0)
+    times = :array.new(@buffer_size, default: System.monotonic_time(:milliseconds))
 
     schedule_tick(clock)
 
@@ -30,17 +30,16 @@ defmodule Squitter.StatsTracker do
 
     new_totals = calculate_totals(totals, state.totals)
 
-    {:ok, counts} = RingBuffer.set(state.counts, state.position, received)
-    {:ok, times} = RingBuffer.set(state.times, state.position, time)
+    counts = :array.set(state.position, received, state.counts)
+    times = :array.set(state.position, time, state.times)
+    next_position = if state.position + 1 >= @buffer_size, do: 0, else: state.position + 1
 
-    p = if state.position + 1 >= @buffer_size, do: 0, else: state.position + 1
-
-    {:noreply, %{state | totals: new_totals, counts: counts, times: times, position: p}}
+    {:noreply, %{state | totals: new_totals, counts: counts, times: times, position: next_position}}
   end
 
   def handle_info(:tick, state) do
-    times = RingBuffer.to_list(state.times)
-    counts = RingBuffer.to_list(state.counts)
+    times = :array.to_list(state.times)
+    counts = :array.to_list(state.counts)
 
     rate = calculate_rate(times, counts)
 
