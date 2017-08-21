@@ -9,8 +9,8 @@ defmodule Squitter.Aircraft do
   alias Squitter.{AircraftLookup, SiteServer, Decoding.CPR}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
-  @air_pos_delta_max_s  10.0
-  @warn_pos_delta_nm    10.0
+  @air_pos_delta_max_s  5.0
+  @warn_pos_delta_nm    50.0
   @timeout_period_s     60
   @clock_s              1
 
@@ -315,10 +315,7 @@ defmodule Squitter.Aircraft do
       # Check distance from last position
       pos_delta = calculate_gcd(current_pos, previous_pos)
       if pos_delta > @warn_pos_delta_nm do
-        Logger.warn """
-        [#{state.address}:#{state.callsign}] Current position #{inspect current_pos} is over #{@warn_pos_delta_nm} NM
-        from last position of #{inspect previous_pos} (#{pos_delta} NM)
-        """
+        Logger.warn "[#{state.address}:#{state.callsign}] Current position #{inspect current_pos} is over #{@warn_pos_delta_nm} NM from last position of #{inspect previous_pos} (#{pos_delta} NM)"
       end
     end
   end
