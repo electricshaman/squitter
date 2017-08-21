@@ -278,13 +278,7 @@ defmodule Squitter.Aircraft do
     else
       {:error, :air_pos_msg_delta} ->
         # More than X seconds between messages, clear the oldest one and bail out.
-        if fflag? do
-          # Odd is newer, clear the even message.
-          {:ok, %{state | last_even_position: nil}}
-        else
-          # Even is newer, clear the odd message.
-          {:ok, %{state | last_odd_position: nil}}
-        end
+        {:ok, %{state | last_even_position: nil, last_odd_position: nil}}
       {:error, _} ->
         {:ok, state}
     end
