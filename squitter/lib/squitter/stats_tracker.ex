@@ -76,7 +76,7 @@ defmodule Squitter.StatsTracker do
        key = format_total_key(k)
        "#{key}=#{v}"
      end)]
-     |> Enum.join(",")
+     |> Enum.join("\n")
   end
 
   defp format_total_key(key) when is_tuple(key) do
