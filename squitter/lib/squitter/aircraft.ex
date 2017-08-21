@@ -6,7 +6,7 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
-  alias Squitter.{AircraftLookup, SiteServer, Decoding.CPR, StatsTracker}
+  alias Squitter.{AircraftLookup, Site, Decoding.CPR, StatsTracker}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @air_pos_delta_max_s  5.0
@@ -268,7 +268,7 @@ defmodule Squitter.Aircraft do
 
       check_distance_from_last_pos(latlon, state.latlon, state)
 
-      {:ok, site_location} = SiteServer.location()
+      {:ok, site_location} = Site.location()
       distance = calculate_gcd(latlon, site_location)
 
       pos_history =
@@ -344,7 +344,7 @@ defmodule Squitter.Aircraft do
         # - we've received more than 1 message
         # - has position data
         # - is within the site range limit
-        {:ok, range_limit} = SiteServer.range_limit()
+        {:ok, range_limit} = Site.range_limit()
         if state.msgs > 1 && length(state.position_history) > 0 && state.distance <= range_limit do
           Squitter.ReportCollector.report(type, msg)
         end

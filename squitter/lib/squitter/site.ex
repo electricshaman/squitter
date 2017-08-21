@@ -1,4 +1,4 @@
-defmodule Squitter.SiteServer do
+defmodule Squitter.Site do
   use GenServer
 
   @default_location     [40.7950914, -98.9153411] # Somewhere in Kansas

@@ -16,7 +16,7 @@ defmodule Squitter.Application do
     children = [
       worker(Squitter.ReportCollector, []),
       registry_supervisor(Squitter.AircraftRegistry, :unique),
-      worker(Squitter.SiteServer, [site[:location], site[:range_limit]]),
+      worker(Squitter.Site, [site[:location], site[:range_limit]]),
       worker(Squitter.AircraftLookup, []),
       worker(Squitter.StatsTracker, [10000]),
       supervisor(Squitter.AircraftSupervisor, []),
