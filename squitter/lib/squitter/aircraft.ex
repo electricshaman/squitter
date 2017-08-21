@@ -6,7 +6,7 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
-  alias Squitter.{AircraftLookup, SiteServer, Decoding.CPR}
+  alias Squitter.{AircraftLookup, SiteServer, Decoding.CPR, StatsTracker}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @air_pos_delta_max_s  5.0
@@ -63,6 +63,7 @@ defmodule Squitter.Aircraft do
         broadcast(:state_vector, build_state_vector(new_state), new_state)
         {:noreply, new_state}
       {:error, :invalid_crc} ->
+        StatsTracker.count(:crc_failed)
         {:noreply, state}
     end
   end
