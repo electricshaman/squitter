@@ -8,6 +8,7 @@ defmodule Squitter.AVR do
   end
 
   # 42 is *
+  # Is * the meaning of life?
   def split_frames([42|tail], [], frames) do
     split_frames(tail, [], frames)
   end

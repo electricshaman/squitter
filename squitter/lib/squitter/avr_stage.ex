@@ -2,23 +2,31 @@ defmodule Squitter.AvrTcpStage do
   use GenStage
   require Logger
   alias Squitter.AVR
+  import Squitter.Decoding.Utils, only: [hex_to_bin: 1]
 
-  @max_attempts 10
+  @max_conn_attempts 10
 
-  def start_link(host, port) do
+  def start_link(host, port, partitions) do
     Logger.debug "Starting up #{__MODULE__}"
-    GenStage.start_link(__MODULE__, [host, port], name: ModeSInStage)
+    GenStage.start_link(__MODULE__, [host, port, partitions], name: AvrTcpStage)
   end
 
-  def init([host, port]) do
+  def init([host, port, partitions]) do
     send(self(), :connect)
+
+    hash_function = fn({t,f} = m) ->
+      {:ok, address} = Squitter.Decoding.ModeS.icao_address(f)
+      partition = :erlang.phash2(address, length(partitions))
+      {m, partition}
+    end
 
     {:producer, %{
       host: host,
       port: port,
       socket: nil,
-      attempts: @max_attempts - 1,
-      buffer: []}}
+      attempts: @max_conn_attempts - 1,
+      buffer: []},
+      dispatcher: {GenStage.PartitionDispatcher, hash: hash_function, partitions: partitions}}
   end
 
   def handle_info({:tcp, _socket, data}, %{buffer: buffer} = state) do
@@ -26,10 +34,12 @@ defmodule Squitter.AvrTcpStage do
 
     {frames, next_buffer} = AVR.split_frames(buffer ++ data)
 
-    # Add a microsecond as a surrogate order
+    # Use time + index as a logical ordering value
     indexed_frames =
-      Enum.with_index(frames, time)
-      |> Enum.map(fn {frame, t} -> {t, frame} end)
+      frames
+      |> Enum.map(&hex_to_bin/1)
+      |> Enum.with_index(time)
+      |> Enum.map(fn {frame, time} -> {time, frame} end)
 
     {:noreply, indexed_frames, %{state | buffer: next_buffer}}
   end
@@ -55,6 +65,6 @@ defmodule Squitter.AvrTcpStage do
   end
 
   def handle_demand(_demand, state) do
-    {:noreply, [], state} # TODO: Buffer demand
+    {:noreply, [], state}
   end
 end

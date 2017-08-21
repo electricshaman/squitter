@@ -4,11 +4,12 @@ defmodule Squitter.Decoding.AltitudeReply do
 
   @df 4
 
-  defstruct [:df, :icao, :time, :parity, :msg]
+  defstruct [:df, :icao, :time, :pi, :parity, :checksum, :msg, :crc]
 
-  def decode(time, <<@df :: 5, _payload :: 27-bits, parity :: 3-bytes>> = msg) do
+  def decode(time, <<@df :: 5, _payload :: 27-bits, pi :: 24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 56)
-    icao = ModeS.icao_address(msg, checksum)
+    {:ok, icao} = ModeS.icao_address(msg, checksum)
+    parity = ModeS.parity(pi, icao)
 
     StatsTracker.count({:df, @df, :decoded})
 
@@ -16,8 +17,11 @@ defmodule Squitter.Decoding.AltitudeReply do
       df: @df,
       icao: icao,
       msg: msg,
+      pi: pi,
       parity: parity,
-      time: time}
+      time: time,
+      checksum: checksum,
+      crc: (if checksum == parity, do: :valid, else: :invalid)}
   end
 
   def decode(_time, other) do

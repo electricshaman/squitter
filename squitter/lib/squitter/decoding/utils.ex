@@ -23,6 +23,7 @@ defmodule Squitter.Decoding.Utils do
   def to_hex_string(_), do: :error
 
   def btol(bin), do: :binary.bin_to_list(bin)
+  def ltob(list), do: :binary.list_to_bin(list)
 
   def hex_to_bin(msg) when is_list(msg),
     do: hex_to_bin(to_string(msg))

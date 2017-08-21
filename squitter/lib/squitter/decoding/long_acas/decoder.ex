@@ -4,11 +4,12 @@ defmodule Squitter.Decoding.LongAcas do
 
   @df 16
 
-  defstruct [:df, :icao, :parity, :msg, :time]
+  defstruct [:df, :icao, :parity, :pi, :checksum, :crc, :msg, :time]
 
-  def decode(time, <<@df :: 5, _control :: 27-bits, _payload :: 56-bits, parity :: 3-bytes>> = msg) do
+  def decode(time, <<@df :: 5, _control :: 27-bits, _payload :: 56-bits, pi :: 24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 112)
-    icao = ModeS.icao_address(msg, checksum)
+    {:ok, icao} = ModeS.icao_address(msg, checksum)
+    parity = ModeS.parity(pi, icao)
 
     StatsTracker.count({:df, @df, :decoded})
 
@@ -17,6 +18,9 @@ defmodule Squitter.Decoding.LongAcas do
       icao: icao,
       msg: msg,
       parity: parity,
+      pi: pi,
+      checksum: checksum,
+      crc: (if checksum == parity, do: :valid, else: :invalid),
       time: time}
   end
 

@@ -4,11 +4,12 @@ defmodule Squitter.Decoding.IdentityReply do
 
   @df 5
 
-  defstruct [:df, :icao, :parity, :msg, :time]
+  defstruct [:df, :icao, :parity, :pi, :icao, :checksum, :crc, :msg, :time]
 
-  def decode(time, <<@df :: 5, _payload :: 27-bits, parity :: 3-bytes>> = msg) do
+  def decode(time, <<@df :: 5, _payload :: 27-bits, pi :: 24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 56)
-    icao = ModeS.icao_address(msg, checksum)
+    {:ok, icao} = ModeS.icao_address(msg, checksum)
+    parity = ModeS.parity(pi, icao)
 
     StatsTracker.count({:df, @df, :decoded})
 
@@ -17,6 +18,9 @@ defmodule Squitter.Decoding.IdentityReply do
       icao: icao,
       msg: msg,
       parity: parity,
+      pi: pi,
+      checksum: checksum,
+      crc: (if checksum == parity, do: :valid, else: :invalid),
       time: time}
   end
 

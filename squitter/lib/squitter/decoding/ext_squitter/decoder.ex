@@ -19,7 +19,7 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   def decode(time, <<df :: 5, ca :: 3, _icao :: 3-bytes, data :: 7-bytes, pi :: 24-unsigned>> = msg) when byte_size(msg) == 14 and df in @df do
     checksum = ModeS.checksum(msg, 112)
-    icao_address = ModeS.icao_address(msg, checksum)
+    {:ok, icao_address} = ModeS.icao_address(msg, checksum)
 
     <<tc :: 5, _rest :: bits>> = data
     type = TypeCode.decode(tc)
