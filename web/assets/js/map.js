@@ -23,7 +23,7 @@ if (document.getElementById('liveMap')) {
     })
 
   let polyOptions = {
-    color: 'red',
+    color: 'black',
     weight: 2,
     opacity: 0.8
   }
@@ -32,13 +32,25 @@ if (document.getElementById('liveMap')) {
     payload.messages.forEach(msg => {
       let aircraft = tracks[msg.address]
       if (!aircraft) {
-        let poly = L.polyline([msg.latlon], polyOptions).addTo(liveMap);
+        let marker = L.circleMarker(msg.latlon, {
+          stroke: true,
+          color: '#854aa7',
+          weight: 2,
+          opacity: 0.9,
+          fill: true,
+          fillColor: '#854aa7',
+          fillOpacity: 1.0,
+          radius: 6,
+        }).addTo(liveMap)
+        let poly = L.polyline([msg.latlon], polyOptions).addTo(liveMap)
+        poly.bringToBack()
         tracks[msg.address] = {
-          polyline: poly
+          polyline: poly,
+          marker: marker
         }
       } else {
-        let poly = aircraft.polyline
-        poly.addLatLng(msg.latlon)
+        aircraft.polyline.addLatLng(msg.latlon)
+        aircraft.marker.setLatLng(msg.latlon)
       }
     })
   })
@@ -58,8 +70,8 @@ if (document.getElementById('liveMap')) {
   function removeAircraftFromMap(address, track_hash, map) {
     let aircraft = track_hash[address]
     if (aircraft) {
-      let poly = aircraft.polyline
-      poly.removeFrom(map)
+      aircraft.polyline.removeFrom(map)
+      aircraft.marker.removeFrom(map)
     }
   }
 }
