@@ -3,10 +3,12 @@ defmodule Squitter do
   Documentation for Squitter.
   """
 
-  def report do
-    call_aircraft(:report)
-    |> Enum.map(fn {:ok, a} -> a end)
-    |> Enum.sort_by(fn a -> a.age end)
+  defp state_report do
+    report =
+      :ets.tab2list(:state_report)
+      |> Enum.map(fn({_key, state}) -> state end)
+
+    %{aircraft: report}
   end
 
   defp call_aircraft(request) do
@@ -21,6 +23,7 @@ defmodule Squitter do
   end
 
   defp aircraft_pids do
-    :pg2.get_members(:aircraft)
+    Supervisor.which_children(Squitter.AircraftSupervisor)
+    |> Enum.map(fn({_, pid, _, _}) -> pid end)
   end
 end

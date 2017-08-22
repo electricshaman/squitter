@@ -19,8 +19,6 @@ defmodule Squitter.Aircraft do
   end
 
   def init([address]) do
-    :pg2.join(:aircraft, self())
-
     reg =
       case AircraftLookup.get_registration(address) do
         {:ok, registration} -> registration
