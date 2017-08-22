@@ -24,6 +24,7 @@ if (document.getElementById('liveMap')) {
     })
 
   let polyOptions = {
+    smoothFactor: 5.0,
     color: 'black',
     weight: 2,
     opacity: 0.7
@@ -75,6 +76,17 @@ if (document.getElementById('liveMap')) {
         aircraft.marker.setLatLng(msg.latlon)
       }
     })
+
+    // Remove aircraft that are no longer part of the report
+    for (var address in tracks) {
+      if (tracks.hasOwnProperty(address)) {
+        if (!payload.aircraft.some(a => a.address === address)) {
+          removeAircraftFromMap(address, tracks, liveMap)
+          delete(tracks[address])
+        }
+      }
+    }
+
   })
 
   channel.on("timeout", payload => {
