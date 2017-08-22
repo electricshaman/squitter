@@ -6,7 +6,7 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
-  alias Squitter.{AircraftLookup, Site, Decoding.CPR, StatsTracker}
+  alias Squitter.{AircraftLookup, Site, Decoding.CPR, StateReport, StatsTracker}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @air_pos_time_delta_max_s   5.0
@@ -58,7 +58,7 @@ defmodule Squitter.Aircraft do
     case handle_msg(msg, state) do
       {:ok, new_state} ->
         new_state = set_received(new_state)
-        broadcast(:state_vector, build_state_vector(new_state), new_state)
+        report(:state_report, build_report(new_state), new_state)
         {:noreply, new_state}
       {:error, _} ->
         {:noreply, state}
@@ -199,10 +199,10 @@ defmodule Squitter.Aircraft do
     {:ok, state}
   end
 
-  defp build_state_vector(state) do
+  defp build_report(state) do
     state
     |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
-      :heading, :vr, :vr_dir, :address, :age, :distance, :country])
+      :heading, :vr, :vr_dir, :address, :age, :distance, :country, :position_history])
     |> Map.put(:latlon, state.latlon)
   end
 
@@ -292,22 +292,17 @@ defmodule Squitter.Aircraft do
     if state.timeout_enabled && timeout_expired?(new_state) do
       {:stop, {:shutdown, :timeout}, new_state}
     else
-      if new_state.age > 0 do
-        # If age is zero then we don't need to broadcast it
-        broadcast(:age, %{address: state.address, age: new_state.age}, state)
-      end
+      report(:age, %{address: state.address, age: new_state.age}, state)
       schedule_tick()
       {:noreply, new_state}
     end
   end
 
   def terminate({:shutdown, :timeout}, state) do
-    broadcast(:timeout, %{address: state.address}, state)
     Logger.debug "Aircraft #{state.address} timed out"
   end
 
   def terminate(reason, state) do
-    broadcast(:terminated, %{address: state.address}, state)
     Logger.debug "Aircraft #{state.address} process terminated due to reason #{inspect reason}"
   end
 
@@ -337,20 +332,19 @@ defmodule Squitter.Aircraft do
     end
   end
 
-  defp broadcast(type, msg, state) when is_atom(type) do
-    cond do
-      type in [:timeout, :terminated] ->
-        # Always broadcast timeouts and terminations
-        Squitter.ReportCollector.report(type, msg)
-      true ->
-        # Everything else: broadcast only for aircraft which:
-        # - we've received more than 1 message
-        # - has position data
-        # - is within the site range limit
-        {:ok, range_limit} = Site.range_limit()
-        if state.msgs > 1 && length(state.position_history) > 0 && state.distance <= range_limit do
-          Squitter.ReportCollector.report(type, msg)
-        end
+  defp report(:age, %{address: address, age: age}, _state) do
+    StateReport.age_changed(address, age)
+  end
+
+  defp report(:state_report, report, _state) do
+    # Only update the state report for aircraft where:
+    # - We've received more than 1 message
+    # - We have position data
+    # - The latest position is within the site range limit
+    {:ok, range_limit} = Site.range_limit()
+    # TODO: Figure out what to do about aircraft that cross the range threshold
+    if report.msgs > 1 && length(report.position_history) > 0 && report.distance <= range_limit do
+      StateReport.state_changed(report.address, report)
     end
   end
 

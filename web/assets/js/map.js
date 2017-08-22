@@ -17,6 +17,7 @@ if (document.getElementById('liveMap')) {
   channel.join()
     .receive("ok", resp => {
       console.log("Joined successfully", resp)
+      channel.push("roger", {})
     })
     .receive("error", resp => {
       console.log("Unable to join", resp)
@@ -25,24 +26,45 @@ if (document.getElementById('liveMap')) {
   let polyOptions = {
     color: 'black',
     weight: 2,
-    opacity: 0.8
+    opacity: 0.7
   }
 
-  channel.on("state_vector", payload => {
-    payload.messages.forEach(msg => {
+  let acIcon = L.icon({
+    iconUrl: '/images/plane_icon.png',
+    iconSize: [32, 38],
+    iconAnchor: [0, 0],
+    popupAnchor: [0, 0],
+    shadowUrl: '/images/plane_icon_shadow.png',
+    shadowSize: [32, 38],
+    shadowAnchor: [0, 0]
+  })
+
+  let acMarkerOptions = {
+    //icon: acIcon
+    stroke: true,
+    color: '#854aa7',
+    weight: 2,
+    opacity: 0.9,
+    fill: true,
+    fillColor: '#854aa7',
+    fillOpacity: 1.0,
+    radius: 4
+  }
+
+  channel.on("state_report", payload => {
+    payload.aircraft.forEach(msg => {
       let aircraft = tracks[msg.address]
       if (!aircraft) {
-        let marker = L.circleMarker(msg.latlon, {
-          stroke: true,
-          color: '#854aa7',
-          weight: 2,
-          opacity: 0.9,
-          fill: true,
-          fillColor: '#854aa7',
-          fillOpacity: 1.0,
-          radius: 6,
-        }).addTo(liveMap)
-        let poly = L.polyline([msg.latlon], polyOptions).addTo(liveMap)
+        let marker = L.circleMarker(msg.latlon, acMarkerOptions).addTo(liveMap)
+        let poly = L.polyline([msg.latlon], polyOptions)
+
+        if (msg.position_history) {
+          msg.position_history.forEach(pos => {
+            poly.addLatLng(pos)
+          })
+        }
+
+        poly.addTo(liveMap)
         poly.bringToBack()
         tracks[msg.address] = {
           polyline: poly,

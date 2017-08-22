@@ -15,7 +15,8 @@ defmodule Squitter.Application do
 
     children = [
       worker(Squitter.ReportCollector, []),
-      registry_supervisor(Squitter.AircraftRegistry, :unique),
+      worker(Squitter.StateReport, []),
+      registry_supervisor(Squitter.AircraftRegistry, :unique, [Squitter.StateReport]),
       worker(Squitter.Site, [site[:location], site[:range_limit]]),
       worker(Squitter.AircraftLookup, []),
       worker(Squitter.StatsTracker, [10000]),
@@ -27,7 +28,7 @@ defmodule Squitter.Application do
     Supervisor.start_link(children, opts)
   end
 
-  defp registry_supervisor(name, keys) do
-    supervisor(Registry, [keys, name, [partitions: System.schedulers_online()]], id: name)
+  defp registry_supervisor(name, keys, listeners \\ []) do
+    supervisor(Registry, [keys, name, [partitions: System.schedulers_online(), listeners: listeners]], id: name)
   end
 end
