@@ -161,6 +161,11 @@ defmodule Squitter.Aircraft do
     {:ok, state}
   end
 
+  defp handle_msg(%CommBIdentityReply{}, state) do
+    # TODO
+    {:ok, state}
+  end
+
   defp handle_msg(%{tc: :aircraft_op_status, type_msg: _msg}, state) do
     # TODO
     # The Version Number for all 1090 MHz ADS-B Messages originating for each specific
