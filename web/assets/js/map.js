@@ -24,10 +24,11 @@ if (document.getElementById('liveMap')) {
     })
 
   let polyOptions = {
-    smoothFactor: 5.0,
+    smoothFactor: 3.0,
+    interactive: false,
     color: 'black',
     weight: 2,
-    opacity: 0.7
+    opacity: 0.0
   }
 
   let acIcon = L.icon({
@@ -57,6 +58,8 @@ if (document.getElementById('liveMap')) {
       let aircraft = tracks[msg.address]
       if (!aircraft) {
         let marker = L.circleMarker(msg.latlon, acMarkerOptions).addTo(liveMap)
+        marker._leaflet_id = msg.address
+
         let poly = L.polyline([msg.latlon], polyOptions)
 
         if (msg.position_history) {
@@ -67,10 +70,24 @@ if (document.getElementById('liveMap')) {
 
         poly.addTo(liveMap)
         poly.bringToBack()
+
         tracks[msg.address] = {
           polyline: poly,
           marker: marker
         }
+
+        marker.on('click', ev => {
+          let a = ev.target._leaflet_id
+          let p = tracks[a].polyline
+          let o = p.options.opacity > 0 ? 0 : 0.7
+          p.setStyle({opacity: o})
+          Object.keys(tracks).forEach(ta => {
+            if(ta != a) {
+              tracks[ta].polyline.setStyle({opacity: 0})
+            }
+          })
+        })
+
       } else {
         aircraft.polyline.addLatLng(msg.latlon)
         aircraft.marker.setLatLng(msg.latlon)
@@ -87,18 +104,6 @@ if (document.getElementById('liveMap')) {
       }
     }
 
-  })
-
-  channel.on("timeout", payload => {
-    payload.messages.forEach(msg => {
-      removeAircraftFromMap(msg.address, tracks, liveMap)
-    })
-  })
-
-  channel.on("terminated", payload => {
-    payload.messages.forEach(msg => {
-      removeAircraftFromMap(msg.address, tracks, liveMap)
-    })
   })
 
   function removeAircraftFromMap(address, track_hash, map) {
