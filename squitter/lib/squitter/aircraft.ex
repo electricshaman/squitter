@@ -60,8 +60,7 @@ defmodule Squitter.Aircraft do
         new_state = set_received(new_state)
         broadcast(:state_vector, build_state_vector(new_state), new_state)
         {:noreply, new_state}
-      {:error, :invalid_crc} ->
-        StatsTracker.count(:crc_failed)
+      {:error, _} ->
         {:noreply, state}
     end
   end
@@ -71,8 +70,9 @@ defmodule Squitter.Aircraft do
     {:reply, {:ok, reply}, state}
   end
 
-  defp handle_msg(%{crc: :invalid}, _state) do
+  defp handle_msg(%{df: df, crc: :invalid}, _state) do
     # Ignore messages with invalid CRC
+    StatsTracker.count([:crc_failed, :df, df])
     {:error, :invalid_crc}
   end
 
