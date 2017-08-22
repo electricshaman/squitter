@@ -9,11 +9,6 @@ defmodule Squitter do
     |> Enum.sort_by(fn a -> a.age end)
   end
 
-  def enable_flight_age_timeouts(enable \\ true) do
-    request = if enable, do: :enable_age_timeout, else: :disable_age_timeout
-    cast_aircraft(request)
-  end
-
   defp call_aircraft(request) do
     aircraft_pids()
     |> Enum.map(fn pid -> GenServer.call(pid, request) end)

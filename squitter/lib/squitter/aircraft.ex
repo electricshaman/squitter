@@ -68,14 +68,6 @@ defmodule Squitter.Aircraft do
     end
   end
 
-  def handle_cast(:enable_age_timeout, state) do
-    {:noreply, %{state | timeout_enabled: true}}
-  end
-
-  def handle_cast(:disable_age_timeout, state) do
-    {:noreply, %{state | timeout_enabled: false}}
-  end
-
   def handle_call(:state_vector, _from, state) do
     reply = build_state_vector(state)
     {:reply, {:ok, reply}, state}
