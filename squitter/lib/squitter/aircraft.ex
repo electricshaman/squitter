@@ -9,10 +9,10 @@ defmodule Squitter.Aircraft do
   alias Squitter.{AircraftLookup, Site, Decoding.CPR, StatsTracker}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
-  @air_pos_delta_max_s  5.0
-  @warn_pos_delta_nm    50.0
-  @timeout_period_s     60
-  @clock_s              1
+  @air_pos_time_delta_max_s   5.0
+  @air_pos_dist_delta_max_nm  100.0
+  @timeout_period_s           60
+  @clock_s                    1
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
@@ -263,10 +263,9 @@ defmodule Squitter.Aircraft do
   def calculate_position(%{last_even_position: {even_time, even}, last_odd_position: {odd_time, odd}} = state) do
     fflag? = odd_time > even_time
 
-    with :ok <- check_air_pos_msg_delta(even_time, odd_time),
-         {:ok, latlon} <- decode_airborne_cpr(even, odd, fflag?) do
-
-      check_distance_from_last_pos(latlon, state.latlon, state)
+    with :ok <- check_air_pos_time_delta(even_time, odd_time),
+         {:ok, latlon} <- decode_airborne_cpr(even, odd, fflag?),
+         :ok <- check_air_pos_dist_delta(latlon, state.latlon) do
 
       {:ok, site_location} = Site.location()
       distance = calculate_gcd(latlon, site_location)
@@ -277,9 +276,12 @@ defmodule Squitter.Aircraft do
 
       {:ok, %{state | latlon: latlon, distance: distance, position_history: pos_history}}
     else
-      {:error, :air_pos_msg_delta} ->
+      {:error, :air_pos_time_delta} ->
         # More than X seconds between messages, clear the oldest one and bail out.
         {:ok, %{state | last_even_position: nil, last_odd_position: nil}}
+      {:error, {:air_pos_dist_delta, position, dist}} ->
+        Logger.warn "[#{state.address}:#{state.callsign}] Skipping current position #{inspect position}: over #{@air_pos_dist_delta_max_nm} NM from last position of #{inspect state.latlon} (#{dist} NM)"
+        {:ok, state}
       {:error, _} ->
         {:ok, state}
     end
@@ -311,13 +313,14 @@ defmodule Squitter.Aircraft do
 
   # Private helpers
 
-  defp check_distance_from_last_pos(current_pos, previous_pos, state) do
-    if !is_nil(previous_pos) do
-      # Check distance from last position
-      pos_delta = calculate_gcd(current_pos, previous_pos)
-      if pos_delta > @warn_pos_delta_nm do
-        Logger.warn "[#{state.address}:#{state.callsign}] Current position #{inspect current_pos} is over #{@warn_pos_delta_nm} NM from last position of #{inspect previous_pos} (#{pos_delta} NM)"
-      end
+  defp check_air_pos_dist_delta(_current_pos, nil), do: :ok
+  defp check_air_pos_dist_delta(current_pos, previous_pos) do
+    # Check distance from last position
+    dist_delta = calculate_gcd(current_pos, previous_pos)
+    if dist_delta > @air_pos_dist_delta_max_nm do
+      {:error, {:air_pos_dist_delta, current_pos, dist_delta}}
+    else
+      :ok
     end
   end
 
@@ -325,10 +328,10 @@ defmodule Squitter.Aircraft do
     CPR.airborne_position(even.lat_cpr, even.lon_cpr, odd.lat_cpr, odd.lon_cpr, fflag?)
   end
 
-  defp check_air_pos_msg_delta(even_time, odd_time) do
+  defp check_air_pos_time_delta(even_time, odd_time) do
     receipt_delta_s = abs(odd_time - even_time) / 1_000_000
-    if receipt_delta_s >= @air_pos_delta_max_s do
-      {:error, :air_pos_msg_delta}
+    if receipt_delta_s >= @air_pos_time_delta_max_s do
+      {:error, :air_pos_time_delta}
     else
       :ok
     end
