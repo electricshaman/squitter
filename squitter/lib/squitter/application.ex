@@ -9,12 +9,9 @@ defmodule Squitter.Application do
   def start(_type, _args) do
     Logger.debug "Squitter application starting"
 
-    :pg2.create(:aircraft)
-
     site = Application.get_env(:squitter, :site) || []
 
     children = [
-      worker(Squitter.ReportCollector, []),
       worker(Squitter.StateReport, []),
       registry_supervisor(Squitter.AircraftRegistry, :unique, [Squitter.StateReport]),
       worker(Squitter.Site, [site[:location], site[:range_limit]]),

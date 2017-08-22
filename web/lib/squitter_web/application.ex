@@ -8,8 +8,7 @@ defmodule Squitter.Web.Application do
     Logger.debug "Squitter web starting up"
 
     children = [
-      supervisor(Squitter.Web.Endpoint, []),
-      worker(Squitter.Web.ReportPusher, [])
+      supervisor(Squitter.Web.Endpoint, [])
     ]
 
     opts = [strategy: :one_for_one, name: Squitter.Web.Supervisor]
