@@ -57,8 +57,11 @@ if (document.getElementById('liveMap')) {
     payload.aircraft.forEach(msg => {
       let aircraft = tracks[msg.address]
       if (!aircraft) {
-        let marker = L.circleMarker(msg.latlon, acMarkerOptions).addTo(liveMap)
-        marker._leaflet_id = msg.address
+        let marker = L.circleMarker(msg.latlon, acMarkerOptions)
+          .addTo(liveMap)
+          .bindPopup(msg.address + '<br />' + msg.callsign)
+
+        marker.address = msg.address
 
         let poly = L.polyline([msg.latlon], polyOptions)
 
@@ -77,7 +80,7 @@ if (document.getElementById('liveMap')) {
         }
 
         marker.on('click', ev => {
-          let a = ev.target._leaflet_id
+          let a = ev.target.address
           let p = tracks[a].polyline
           let o = p.options.opacity > 0 ? 0 : 0.7
           p.setStyle({opacity: o})
@@ -96,11 +99,10 @@ if (document.getElementById('liveMap')) {
 
     // Remove aircraft that are no longer part of the report
     for (var address in tracks) {
-      if (tracks.hasOwnProperty(address)) {
-        if (!payload.aircraft.some(a => a.address === address)) {
-          removeAircraftFromMap(address, tracks, liveMap)
-          delete(tracks[address])
-        }
+      if (!tracks.hasOwnProperty(address)) continue;
+      if (!payload.aircraft.some(a => a.address === address)) {
+        removeAircraftFromMap(address, tracks, liveMap)
+        delete tracks[address]
       }
     }
 
