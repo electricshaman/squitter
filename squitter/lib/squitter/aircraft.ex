@@ -260,7 +260,7 @@ defmodule Squitter.Aircraft do
 
     with :ok <- check_air_pos_time_delta(even_time, odd_time),
          {:ok, latlon} <- decode_airborne_cpr(even, odd, fflag?),
-         :ok <- check_air_pos_dist_delta(latlon, state.latlon) do
+         :ok <- check_air_pos_dist(latlon, state.latlon) do
 
       {:ok, site_location} = Site.location()
       distance = calculate_gcd(latlon, site_location)
@@ -274,7 +274,7 @@ defmodule Squitter.Aircraft do
       {:error, :air_pos_time_delta} ->
         # More than X seconds between messages, clear the oldest one and bail out.
         {:ok, %{state | last_even_position: nil, last_odd_position: nil}}
-      {:error, {:air_pos_dist_delta, position, dist}} ->
+      {:error, {:air_pos_dist, position, dist}} ->
         Logger.warn "[#{state.address}:#{state.callsign}] Skipping current position #{inspect position}: over #{@air_pos_dist_delta_max_nm} NM from last position of #{inspect state.latlon} (#{dist} NM)"
         {:ok, state}
       {:error, _} ->
@@ -303,12 +303,18 @@ defmodule Squitter.Aircraft do
 
   # Private helpers
 
-  defp check_air_pos_dist_delta(_current_pos, nil), do: :ok
-  defp check_air_pos_dist_delta(current_pos, previous_pos) do
-    # Check distance from last position
+  defp check_air_pos_dist(_current_pos, nil), do: :ok
+  defp check_air_pos_dist(current_pos, previous_pos) do
     dist_delta = calculate_gcd(current_pos, previous_pos)
-    if dist_delta > @air_pos_dist_delta_max_nm do
-      {:error, {:air_pos_dist_delta, current_pos, dist_delta}}
+
+    # Check distance from site and from last good position is within range
+    {:ok, site_location} = Site.location()
+    {:ok, range_limit} = Site.range_limit()
+
+    dist_from_site = calculate_gcd(current_pos, site_location)
+
+    if dist_delta > @air_pos_dist_delta_max_nm && dist_from_site > range_limit do
+      {:error, {:air_pos_dist, current_pos, dist_delta}}
     else
       :ok
     end
