@@ -38,8 +38,7 @@ exports.config = {
     // will be copied to `paths.public`, which is "priv/static" by default.
     assets: /^(static)/,
     ignored: [
-      /node_modules/,
-      /elm-stuff/
+      /node_modules/
     ]
 
   },
@@ -47,18 +46,13 @@ exports.config = {
   // Phoenix paths configuration
   paths: {
     // Dependencies and current project directories to watch
-    watched: ["static", "css", "js", "elm"],
+    watched: ["static", "css", "js"],
     // Where to compile files to
     public: "../priv/static"
   },
 
   // Configure your plugins
   plugins: {
-    elmBrunch: {
-      elmFolder: "elm",
-      mainModules: ["Aircraft.elm"],
-      outputFolder: "../js"
-    },
     babel: {
       // Do not use ES6 compiler in vendor code
       ignore: [/vendor/]

@@ -20,7 +20,7 @@ if (document.getElementById('live-map')) {
   const selMarkerFillOpacity = 1.0
   const tracks = {}
 
-  var liveMap = L.map('live-map') // .setView([35.0000, -97.0000], 8)
+  var liveMap = L.map('live-map')
   L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/{style}/{z}/{x}/{y}.png', {
     style: 'light_all',
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
