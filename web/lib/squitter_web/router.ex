@@ -15,9 +15,7 @@ defmodule Squitter.Web.Router do
 
   scope "/", Squitter.Web do
     pipe_through :browser # Use the default browser stack
-
     get "/", AircraftController, :index
-    get "/map", MapController, :index
   end
 
   # Other scopes may use custom stacks.

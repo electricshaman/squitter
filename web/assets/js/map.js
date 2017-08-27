@@ -1,12 +1,10 @@
-import {Socket} from "phoenix"
-import {altitudeToColor} from "./altitude"
 import chroma from 'chroma-js'
+import L from 'leaflet';
+import socket from "./socket"
 
 require('leaflet-hotline')(L);
 
-if (document.getElementById('liveMap')) {
-  let socket = new Socket("/socket")
-
+if (document.getElementById('live-map')) {
   const altColorScaleMin = 1000
   const altColorScaleMax = 39000
   const altColorScaleStep = 5000
@@ -22,17 +20,16 @@ if (document.getElementById('liveMap')) {
   const selMarkerFillOpacity = 1.0
   const tracks = {}
 
-  var liveMap = L.map('liveMap').setView([35.0000, -97.0000], 8)
+  var liveMap = L.map('live-map') // .setView([35.0000, -97.0000], 8)
   L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/{style}/{z}/{x}/{y}.png', {
     style: 'light_all',
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
   }).addTo(liveMap)
 
   let channel = socket.channel('aircraft:messages', {})
-  socket.connect()
-
   channel.join()
     .receive('ok', res => {
+      liveMap.setView(res.site_location, 7)
       console.log('Joined channel', res)
       channel.push("roger", {})
     })
