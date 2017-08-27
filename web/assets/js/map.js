@@ -26,11 +26,21 @@ if (document.getElementById('live-map')) {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
   }).addTo(liveMap)
 
+  var rangeRingGroup;
+
   let channel = socket.channel('aircraft:messages', {})
   channel.join()
     .receive('ok', res => {
-      liveMap.setView(res.site_location, 7)
       console.log('Joined channel', res)
+
+      liveMap.setView(res.site_location, 7)
+
+      // Range rings
+      let rings = createRangeRings(res.site_location)
+      rangeRingGroup = L.featureGroup(rings).addTo(liveMap)
+      rangeRingGroup.bringToBack()
+      liveMap.fitBounds(rangeRingGroup.getBounds())
+
       channel.push("roger", {})
     })
     .receive('error', res => {
@@ -187,4 +197,14 @@ if (document.getElementById('live-map')) {
   const setMarkerColor = (marker, color) => {
     marker.setStyle({fillColor: color})
   }
+
+  const createRangeRings = center =>
+    [50, 100, 150, 200, 250].map(r => L.circle(center, {
+      radius: r * 1852,
+      fill: false,
+      weight: 1.0,
+      opacity: 0.5,
+      dashArray: '5,5',
+      interactive: false
+    }))
 }
