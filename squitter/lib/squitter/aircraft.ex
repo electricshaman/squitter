@@ -270,8 +270,10 @@ defmodule Squitter.Aircraft do
       {:ok, site_location} = Site.location()
       distance = calculate_gcd(latlon, site_location)
 
+      position = latlon ++ [state.altitude]
+
       pos_history =
-        [latlon | state.position_history]
+        [position | state.position_history]
         |> Enum.reverse
 
       {:ok, %{state | latlon: latlon, distance: distance, position_history: pos_history}}
