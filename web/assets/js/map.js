@@ -1,6 +1,6 @@
 import chroma from 'chroma-js'
-import L from 'leaflet';
-import socket from "./socket"
+import L from 'leaflet'
+import {PubSub} from 'pubsub-js'
 
 require('leaflet-hotline')(L);
 
@@ -16,8 +16,6 @@ if (document.getElementById('live-map')) {
     palette[alt/altColorScaleMax] = altColorScale(alt).hex()
   }
 
-  const defMarkerFillOpacity = 0.7
-  const selMarkerFillOpacity = 1.0
   const tracks = {}
 
   var liveMap = L.map('live-map')
@@ -26,30 +24,27 @@ if (document.getElementById('live-map')) {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
   }).addTo(liveMap)
 
-  var rangeRingGroup;
+  liveMap.setView(SITE_LOCATION, 7)
 
-  let channel = socket.channel('aircraft:messages', {})
-  channel.join()
-    .receive('ok', res => {
-      console.log('Joined channel', res)
+  // Range rings
+  const createRangeRings = center =>
+    [50, 100, 150, 200, 250].map(r => L.circle(center, {
+      radius: r * 1852,
+      fill: false,
+      weight: 1.0,
+      opacity: 0.7,
+      dashArray: '5,5',
+      interactive: false
+    }))
 
-      liveMap.setView(res.site_location, 7)
-
-      // Range rings
-      let rings = createRangeRings(res.site_location)
-      rangeRingGroup = L.featureGroup(rings).addTo(liveMap)
-      rangeRingGroup.bringToBack()
-      liveMap.fitBounds(rangeRingGroup.getBounds())
-
-      channel.push("roger", {})
-    })
-    .receive('error', res => {
-      console.log('Failed to join channel!', res)
-    })
+  let rings = createRangeRings(SITE_LOCATION)
+  let rangeRingGroup = L.featureGroup(rings).addTo(liveMap)
+  rangeRingGroup.bringToBack()
+  liveMap.fitBounds(rangeRingGroup.getBounds())
 
   let trackOptions = {
     smoothFactor: 2.0,
-    weight: 1.5,
+    weight: 2.0,
     outlineWidth: 0,
     palette: palette,
     min: altColorScaleMin,
@@ -57,132 +52,136 @@ if (document.getElementById('live-map')) {
   }
 
   let acMarkerOptions = {
+    fillOpacity: 1.0,
     stroke: false,
-    fill: true,
     fillColor: '#854aa7',
-    fillOpacity: defMarkerFillOpacity,
     radius: 6,
     interactive: true
   }
 
   let ttipOptions = {
     direction: 'right',
-    permanent: true,
-    offset: [15, 0],
+    offset: [10, 0],
     opacity: 0.9,
   }
 
-  channel.on('state_report', payload => {
-    payload.aircraft.forEach(msg => {
-      let aircraft = tracks[msg.address]
-      if (!aircraft) {
-        // Add new aircraft
+  PubSub.subscribe('ac.created', (topic, ac) => {
+    // Add new aircraft
+    let ttip = L.tooltip(ttipOptions)
+    let marker = L.circleMarker(ac.latlon, acMarkerOptions)
+    .bindTooltip(ttip)
+    .setTooltipContent(formatTooltipContent(ac))
+    .addTo(liveMap)
 
-        let ttip = L.tooltip(ttipOptions)
-        let marker = L.circleMarker(msg.latlon, acMarkerOptions)
-        .bindTooltip(ttip)
-        .setTooltipContent(formatTooltipContent(msg))
-        .addTo(liveMap)
+    setMarkerColor(marker, altColorScale(ac.altitude))
 
-        marker.closeTooltip()
-        setMarkerColor(marker, altColorScale(msg.altitude))
+    marker.address = ac.address
+    marker.selected = false
 
-        marker.address = msg.address
-        marker.selected = false
-        marker.on('click', handleMarkerClick)
-        marker.on('mouseover', handleMarkerMouseOver)
-        marker.on('mouseout', handleMarkerMouseOut)
+    marker.on('click', handleMarkerClick)
+    marker.on('mouseover', handleMarkerMouseOver)
+    marker.on('mouseout', handleMarkerMouseOut)
 
-        let points = [];
-        if (msg.position_history) {
-          msg.position_history.forEach(p => points.push(p))
-        } else {
-          let [lat, lon] = msg.latlon
-          points.push([lat, lon, msg.altitude]);
-        }
+    let points = [];
+    if (ac.position_history) {
+      ac.position_history.forEach(p => points.push(p))
+    } else {
+      let [lat, lon] = ac.latlon
+      points.push([lat, lon, ac.altitude]);
+    }
 
-        let track = L.hotline(points, trackOptions)
+    let track = L.hotline(points, trackOptions)
 
-        tracks[msg.address] = {
-          track: track,
-          marker: marker
-        }
-      } else {
-        // Update existing aircraft
-        var [lat, lon] = msg.latlon
-        let updatedTrack = aircraft.track.getLatLngs().map(p => [p.lat, p.lng, p.alt]).concat([[lat, lon, msg.altitude]])
-        aircraft.track.setLatLngs(updatedTrack)
+    tracks[ac.address] = {
+      track: track,
+      marker: marker
+    }
+  })
 
-        setMarkerColor(aircraft.marker, altColorScale(msg.altitude))
-        aircraft.marker.setLatLng(msg.latlon)
-          .setTooltipContent(formatTooltipContent(msg))
-        aircraft.marker.bringToFront()
-      }
-    })
+  PubSub.subscribe('ac.updated', (topic, ac) => {
+    // Update existing aircraft
+    var aircraft = tracks[ac.address]
 
-    // Remove aircraft that are no longer part of the report
-    for (var address in tracks) {
-      if (!tracks.hasOwnProperty(address)) continue;
-      if (!payload.aircraft.some(a => a.address === address)) {
-        removeAircraftFromMap(address, tracks, liveMap)
-        delete tracks[address]
-      }
+    var [lat, lon] = ac.latlon
+    let updatedTrack = aircraft.track.getLatLngs()
+      .map(p => [p.lat, p.lng, p.alt])
+      .concat([[lat, lon, ac.altitude]])
+
+    aircraft.track.setLatLngs(updatedTrack)
+
+    setMarkerColor(aircraft.marker, altColorScale(ac.altitude))
+    aircraft.marker.setLatLng(ac.latlon)
+      .setTooltipContent(formatTooltipContent(ac))
+  })
+
+  PubSub.subscribe('ac.removed', (topic, address) => {
+    removeAircraftFromMap(address, tracks, liveMap)
+    delete tracks[address]
+  })
+
+  PubSub.subscribe('ac.selected', (topic, address) => {
+    let ac = tracks[address]
+    if (ac) {
+      toggleMarker(ac.marker)
     }
   })
 
   const handleMarkerMouseOver = ev => {
     let marker = ev.target
-    marker.openTooltip()
-    showTrack(marker)
+    if (!marker.selected) {
+      showTrack(marker)
+    }
   }
 
   const handleMarkerMouseOut = ev => {
     let marker = ev.target
     if (!marker.selected) {
-      marker.closeTooltip()
       hideTrack(marker)
     }
   }
 
   const handleMarkerClick = ev => {
     let marker = ev.target
+    toggleMarker(marker)
+  }
 
-    marker.selected = !marker.selected
-
-    if (marker.selected) {
-      marker.openTooltip()
+  const toggleMarker = marker => {
+    if(!marker.selected) {
+      PubSub.publish('marker.selected', marker.address)
+      marker.selected = true
+      hideOtherTracks(marker)
       showTrack(marker)
     } else {
-      marker.closeTooltip()
+      PubSub.publish('marker.unselected', marker.address)
+      marker.selected = false
       hideTrack(marker)
+    }
+  }
+
+  const hideOtherTracks = marker => {
+    for(var i = 0; i < tracks.length; i++) {
+      let track = tracks[i];
+      if (track.marker.address != marker.address) {
+        hideTrack(track.marker)
+      }
     }
   }
 
   const showTrack = marker => {
     let addr = marker.address
-    let line = tracks[addr].track
-
-    marker.setStyle({
-      fillOpacity: selMarkerFillOpacity
-    })
-
-    liveMap.addLayer(line)
+    let track = tracks[addr].track
+    liveMap.addLayer(track)
   }
 
   const hideTrack = marker => {
     let addr = marker.address
-    let line = tracks[addr].track
-
-    marker.setStyle({
-      fillOpacity: defMarkerFillOpacity
-    })
-
-    liveMap.removeLayer(line)
+    let track = tracks[addr].track
+    liveMap.removeLayer(track)
   }
 
   const formatTooltipContent = ac =>
     `<strong>${(ac.callsign != "" ? ac.callsign : "???????")}</strong><br />
-     ${ac.altitude} ft<br />
+     ${ac.altitude.toLocaleString()} ft<br />
      ${ac.velocity_kt} kts<br />
      ${ac.heading}&deg;`
 
@@ -197,14 +196,4 @@ if (document.getElementById('live-map')) {
   const setMarkerColor = (marker, color) => {
     marker.setStyle({fillColor: color})
   }
-
-  const createRangeRings = center =>
-    [50, 100, 150, 200, 250].map(r => L.circle(center, {
-      radius: r * 1852,
-      fill: false,
-      weight: 1.0,
-      opacity: 0.5,
-      dashArray: '5,5',
-      interactive: false
-    }))
 }

@@ -3,8 +3,7 @@ defmodule Squitter.Web.AircraftChannel do
   require Logger
 
   def join("aircraft:" <> _key, _payload, socket) do
-    # TODO: Pull site_location from service discovery mechanism
-    {:ok, %{site_location: [35.0000, -97.0000]}, socket}
+    {:ok, socket}
   end
 
   def handle_in("roger", payload, socket) do

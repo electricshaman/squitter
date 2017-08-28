@@ -29,7 +29,7 @@
           </a>
         </div>
         <ul class="nav navbar-nav">
-          <li><a href="/">Aircraft</a></li>
+          <li><a href="/">Squitter</a></li>
         </ul>
         <a id="nerves-badge" class="pull-right" href="http://www.nerves-project.org" target="_new">
           <img alt="Powered by Nerves" src="/images/nerves-badge.png">
