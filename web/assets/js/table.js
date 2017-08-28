@@ -11,10 +11,23 @@ let table = $('#aircraft-table').DataTable({
   columns: [
     { data: 'address', title: 'Address'},
     { data: 'callsign', title: 'Callsign'},
-    { data: 'altitude', title: 'Altitude', render: (data, type, row) => data.toLocaleString()},
+    { data: 'altitude', title: 'Altitude',
+      className: "align-right",
+      render: (data, type, row) => {
+        let alt = data.toLocaleString()
+        switch(row.vr_dir) {
+          case 'up':
+            return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-top"></span>`
+          case 'down':
+            return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-bottom"></span>`
+          default:
+            return `${alt} <div class="altitude-spacer"></div>`
+        }
+      }
+    },
     { data: 'velocity_kt', title: 'Speed'},
     { data: 'distance', title: 'Distance'},
-    { data: 'heading', title: 'Heading', render: (data, type, row) => data + '&deg;'},
+    { data: 'heading', title: 'Heading', render: (data, type, row) => `${data}&deg;`},
     { data: 'msgs', title: 'Msgs'},
     { data: 'age', title: 'Age'}
   ]
