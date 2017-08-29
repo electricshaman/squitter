@@ -37,16 +37,12 @@ exports.config = {
     // By default, we set this to "/assets/static". Files in this directory
     // will be copied to `paths.public`, which is "priv/static" by default.
     assets: /^(static)/,
-    ignored: [
-      /node_modules/
-    ]
-
   },
 
   // Phoenix paths configuration
   paths: {
     // Dependencies and current project directories to watch
-    watched: ["static", "css", "js"],
+    watched: ["static", "css", "js", "node_modules/datatables.net-bs/css"],
     // Where to compile files to
     public: "../priv/static"
   },
