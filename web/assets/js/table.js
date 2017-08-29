@@ -16,11 +16,11 @@ let table = $('#aircraft-table').DataTable({
       render: (data, type, row) => {
         let alt = data.toLocaleString()
         if (row.vr > 0) {
-            return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-top"></span>`
+          return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-top"></span>`
         } else if (row.vr < 0) {
-            return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-bottom"></span>`
+          return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-bottom"></span>`
         } else {
-            return `${alt} <div class="altitude-spacer"></div>`
+          return `${alt} <div class="altitude-spacer"></div>`
         }
       }
     },
