@@ -156,7 +156,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       s_vr    :: 1,
       vr      :: 9,
       _resv_b :: 2,
-      s_dif  :: 1,
+      s_dif   :: 1,
       dif     :: 7,
       _       :: binary>> = body
 
@@ -208,7 +208,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       s_vr    :: 1,
       vr      :: 9,
       _resv_b :: 2,
-      s_dif  :: 1,
+      s_dif   :: 1,
       dif     :: 7,
       _       :: binary>> = body
 
@@ -223,7 +223,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       nac: nac,
       heading: heading,
       velocity_kt: as,
-      airspeed_type: (if as_t == 1, do: :true, else: :indicated),
+      airspeed_type: (if as_t == 1, do: :true_speed, else: :indicated_speed),
       vert_rate: vert_rate(vr, s_vr),
       vert_rate_src: vert_rate_source(vrsrc),
       geo_delta: geo_delta(dif, s_dif),
