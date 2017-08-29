@@ -1,11 +1,6 @@
 defmodule Squitter.Decoding.ExtSquitter.AircraftCategory do
   @doc """
   Decode the aircraft category.
-
-  | MSG Bits | Category Set |
-  |----------|--------------|
-  | 33-37    | 1-5          |
-
   """
   def decode(type_code, category) do
     case type_code do
