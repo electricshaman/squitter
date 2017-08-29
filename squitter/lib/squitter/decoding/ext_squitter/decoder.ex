@@ -146,7 +146,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   """
   def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>) when st in [1, 2] do
     <<ic      :: 1,
-      resv_a  :: 1,
+      _resv_a :: 1,
       nac     :: 3,
       s_ew    :: 1,
       v_ew    :: 10,
@@ -155,27 +155,22 @@ defmodule Squitter.Decoding.ExtSquitter do
       vrsrc   :: 1,
       s_vr    :: 1,
       vr      :: 9,
-      resv_b  :: 2,
-      s_dif   :: 1,
+      _resv_b :: 2,
+      _s_dif  :: 1,
       dif     :: 7,
       _       :: binary>> = body
 
+    {velocity, heading} = calculate_vector(s_ew, s_ns, v_ew, v_ns)
+
     %GroundSpeed{
-      st: st,
-      ic: ic,
-      resv_a: resv_a,
+      intent_change: ic == 1,
       nac: nac,
-      sign_ew: s_ew,
-      v_ew: v_ew,
-      sign_ns: s_ns,
-      v_ns: v_ns,
-      vrsrc: vrsrc,
-      sign_vr: s_vr,
-      vr: vr,
-      resv_b: resv_b,
-      sign_dif: s_dif,
-      dif: dif
-    }
+      heading: heading,
+      velocity_kt: velocity,
+      vert_rate_src: vert_rate_source(vrsrc),
+      vert_rate: vert_rate(vr, s_vr),
+      baro_alt_diff: dif,
+      supersonic: st == 2}
   end
 
   @doc """
@@ -203,7 +198,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   """
   def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>) when st in [3, 4] do
     <<ic      :: 1,
-      resv_a  :: 1,
+      _resv_a :: 1,
       nac     :: 3,
       s_hdg   :: 1,
       hdg     :: 10,
@@ -212,34 +207,82 @@ defmodule Squitter.Decoding.ExtSquitter do
       vrsrc   :: 1,
       s_vr    :: 1,
       vr      :: 9,
-      resv_b  :: 2,
-      s_dif   :: 1,
+      _resv_b :: 2,
+      _s_dif  :: 1,
       dif     :: 7,
       _       :: binary>> = body
 
+    heading = if s_hdg == 1 do
+      trunc(:erlang.float(hdg) / 1024.0 * 360.0)
+    else
+      nil
+    end
+
     %AirSpeed{
-      st: st,
-      ic: ic,
-      resv_a: resv_a,
+      intent_change: ic == 1,
       nac: nac,
-      sign_hdg: s_hdg,
-      hdg: hdg,
-      as_type: as_t,
-      as: as,
-      vrsrc: vrsrc,
-      sign_vr: s_vr,
-      vr: vr,
-      resv_b: resv_b,
-      sign_dif: s_dif,
-      dif: dif
-    }
+      heading: heading,
+      velocity_kt: as,
+      airspeed_type: (if as_t == 1, do: :true, else: :indicated),
+      vert_rate: vert_rate(vr, s_vr),
+      vert_rate_src: vert_rate_source(vrsrc),
+      baro_alt_diff: dif,
+      supersonic: st == 4}
   end
 
   def decode_type(_type, _msg) do
-    # TODO: parse aircraft status, operational status, target state status
     #Logger.debug "Missed parsing #{inspect type}: #{inspect msg}"
     %{}
   end
+
+  @doc """
+  Decode velocity and heading.
+  """
+  def calculate_vector(sign_ew, sign_ns, v_ew, v_ns) do
+    v_we = if sign_ew == 1 do
+      -1 * (v_ew - 1)
+    else
+      v_ew - 1
+    end
+
+    v_sn = if sign_ns == 1 do
+      -1 * (v_ns - 1)
+    else
+      v_ns - 1
+    end
+
+    v = :math.sqrt(:math.pow(v_we, 2) + :math.pow(v_sn, 2))
+    h = :math.atan2(v_we, v_sn) * (360/(2 * :math.pi))
+
+    h = if h < 0, do: h + 360, else: h
+
+    {trunc(v), trunc(h)}
+  end
+
+  @doc """
+  Decode vertical rate.
+  """
+  def vert_rate(vr, sign_vr) do
+    if vr == 0, do: 0, else: vr_dir((vr - 1) * 64, sign_vr)
+  end
+
+  @doc """
+  Decode the sign of vertical rate.  Applies sign directly to the provided rate.
+  """
+  def vr_dir(vr, sign_vr) do
+    cond do
+      vr == 1 -> 0
+      sign_vr == 0 -> vr
+      sign_vr == 1 -> -vr
+      true -> 0
+    end
+  end
+
+  @doc """
+  Decode vertical rate source.
+  """
+  def vert_rate_source(vrsrc),
+    do: if vrsrc == 0, do: :geo, else: :baro
 
   @doc """
   Decode the Navigational Integrity Category (NIC)

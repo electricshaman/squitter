@@ -1,18 +1,12 @@
 defmodule Squitter.Decoding.ExtSquitter.GroundSpeed do
   defstruct [
-    :st,
-    :ic,
-    :resv_a,
+    :intent_change,
     :nac,
-    :sign_ew,
-    :v_ew,
-    :sign_ns,
-    :v_ns,
-    :vrsrc,
-    :sign_vr,
-    :vr,
-    :resv_b,
-    :sign_dif,
-    :dif
+    :vert_rate_src,
+    :vert_rate,
+    :velocity_kt,
+    :heading,
+    :baro_alt_diff,
+    :supersonic
   ]
 end

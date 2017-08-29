@@ -43,7 +43,6 @@ defmodule Squitter.Aircraft do
       airspeed_type: nil,
       heading: nil,
       vr: 0,
-      vr_dir: :na,
       vr_src: nil,
       registration: reg,
       squawk: "",
@@ -93,22 +92,11 @@ defmodule Squitter.Aircraft do
   end
 
   defp handle_msg(%{tc: :air_velocity, type_msg: %GroundSpeed{} = gs}, state) do
-    {vel, head} = calculate_vector(gs)
-    {vr, vrdir, vrsrc} = calculate_vertical_rate(gs)
-    {:ok, %{state | velocity_kt: vel, heading: head, vr: vr, vr_dir: vrdir, vr_src: vrsrc}}
+    {:ok, %{state | velocity_kt: gs.velocity_kt, heading: gs.heading, vr: gs.vert_rate, vr_src: gs.vert_rate_src}}
   end
 
-  defp handle_msg(%{tc: :air_velocity, type_msg: %AirSpeed{} = msg}, state) do
-    heading = if msg.sign_hdg do
-      trunc(:erlang.float(msg.hdg) / 1024.0 * 360.0)
-    else
-      0
-    end
-
-    as_type = if msg.as_type, do: :true, else: :indicated
-    {vr, vrdir, vrsrc} = calculate_vertical_rate(msg)
-
-    {:ok, %{state | airspeed_type: as_type, velocity_kt: msg.as, heading: heading, vr: vr, vr_dir: vrdir, vr_src: vrsrc}}
+  defp handle_msg(%{tc: :air_velocity, type_msg: %AirSpeed{} = as}, state) do
+    {:ok, %{state | airspeed_type: as.airspeed_type, velocity_kt: as.velocity_kt.as, heading: as.heading, vr: as.vert_rate, vr_src: as.vert_rate_src}}
   end
 
   defp handle_msg(%{tc: {:surface_pos, _}}, state) do
@@ -202,58 +190,9 @@ defmodule Squitter.Aircraft do
   defp build_report(state) do
     state
     |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
-      :heading, :vr, :vr_dir, :address, :age, :distance, :country, :position_history])
+      :heading, :vr, :address, :age, :distance, :country, :position_history])
     |> Map.put(:latlon, state.latlon)
   end
-
-  def calculate_vector(msg) do
-    v_we = if msg.sign_ew do
-      -1 * (msg.v_ew - 1)
-    else
-      msg.v_ew - 1
-    end
-
-    v_sn = if msg.sign_ns do
-      -1 * (msg.v_ns - 1)
-    else
-      msg.v_ns - 1
-    end
-
-    v = :math.sqrt(:math.pow(v_we, 2) + :math.pow(v_sn, 2))
-    h = :math.atan2(v_we, v_sn) * (360/(2 * :math.pi))
-
-    h = if h < 0, do: h + 360, else: h
-
-    {trunc(v), trunc(h)}
-  end
-
-  def calculate_vertical_rate(msg) do
-    vr = vr(msg)
-    vr_dir = vr_dir(msg)
-    vrsrc = vr_src(msg)
-    {vr, vr_dir, vrsrc}
-  end
-
-  def vr(%{vr: vr}),
-    do: if vr == 0, do: :na, else: (vr - 1) * 64
-  def vr(_other),
-    do: :error
-
-  def vr_dir(%{vr: vr, sign_vr: sign_vr}) do
-    cond do
-      vr == 1 -> :none
-      sign_vr == 0 -> :up
-      sign_vr == 1 -> :down
-      true -> :na
-    end
-  end
-  def vr_dir(_other),
-    do: :error
-
-  def vr_src(%{vrsrc: vrsrc}),
-    do: if vrsrc == 0, do: :geo, else: :baro
-  def vr_src(_other),
-    do: :error
 
   def calculate_position(%{last_even_position: even, last_odd_position: odd} = state) when is_nil(even) or is_nil(odd) do
     # We're missing one of the two messages so we can't calculate the position yet

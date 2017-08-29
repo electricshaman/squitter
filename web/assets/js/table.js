@@ -15,12 +15,11 @@ let table = $('#aircraft-table').DataTable({
       className: 'align-right',
       render: (data, type, row) => {
         let alt = data.toLocaleString()
-        switch(row.vr_dir) {
-          case 'up':
+        if (row.vr > 0) {
             return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-top"></span>`
-          case 'down':
+        } else if (row.vr < 0) {
             return `${alt} <span class="altitude-symbol glyphicon glyphicon-triangle-bottom"></span>`
-          default:
+        } else {
             return `${alt} <div class="altitude-spacer"></div>`
         }
       }

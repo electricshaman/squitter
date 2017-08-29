@@ -1,18 +1,13 @@
 defmodule Squitter.Decoding.ExtSquitter.AirSpeed do
   defstruct [
-    :st,
-    :ic,
-    :resv_a,
+    :intent_change,
     :nac,
-    :sign_hdg,
-    :hdg,
-    :as_type,
-    :as,
-    :vrsrc,
-    :sign_vr,
-    :vr,
-    :resv_b,
-    :sign_dif,
-    :dif
+    :vert_rate,
+    :vert_rate_src,
+    :velocity_kt,
+    :airspeed_type,
+    :heading,
+    :baro_alt_diff,
+    :supersonic
   ]
 end
