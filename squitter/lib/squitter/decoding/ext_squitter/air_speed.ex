@@ -7,7 +7,7 @@ defmodule Squitter.Decoding.ExtSquitter.AirSpeed do
     :velocity_kt,
     :airspeed_type,
     :heading,
-    :baro_alt_diff,
+    :geo_delta,
     :supersonic
   ]
 end

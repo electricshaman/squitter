@@ -6,7 +6,7 @@ defmodule Squitter.Decoding.ExtSquitter.GroundSpeed do
     :vert_rate,
     :velocity_kt,
     :heading,
-    :baro_alt_diff,
+    :geo_delta,
     :supersonic
   ]
 end

@@ -156,7 +156,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       s_vr    :: 1,
       vr      :: 9,
       _resv_b :: 2,
-      _s_dif  :: 1,
+      s_dif  :: 1,
       dif     :: 7,
       _       :: binary>> = body
 
@@ -169,7 +169,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       velocity_kt: velocity,
       vert_rate_src: vert_rate_source(vrsrc),
       vert_rate: vert_rate(vr, s_vr),
-      baro_alt_diff: dif,
+      geo_delta: geo_delta(dif, s_dif),
       supersonic: st == 2}
   end
 
@@ -208,7 +208,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       s_vr    :: 1,
       vr      :: 9,
       _resv_b :: 2,
-      _s_dif  :: 1,
+      s_dif  :: 1,
       dif     :: 7,
       _       :: binary>> = body
 
@@ -226,7 +226,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       airspeed_type: (if as_t == 1, do: :true, else: :indicated),
       vert_rate: vert_rate(vr, s_vr),
       vert_rate_src: vert_rate_source(vrsrc),
-      baro_alt_diff: dif,
+      geo_delta: geo_delta(dif, s_dif),
       supersonic: st == 4}
   end
 
@@ -342,4 +342,23 @@ defmodule Squitter.Decoding.ExtSquitter do
       end
     %{pos | nic: nic, rc: rc}
   end
+
+  @doc """
+  Decode the delta between barometric altitude and geometric altitude.
+  If the result is positive, geometric altitude is above barometric altitude.
+  If the result is negative, geometric altitude is below barometric altitude.
+  If the result is nil, no delta information is available.
+  """
+  def geo_delta(0, _sign),
+    do: nil
+  def geo_delta(1, _sign),
+    do: 0
+  def geo_delta(raw_delta, sign),
+    do: geo_delta_dir(raw_delta * 25, sign)
+
+  @doc """
+  Apply the sign to the provided geo delta.
+  """
+  def geo_delta_dir(geo_delta, sign),
+    do: if sign == 1, do: -geo_delta, else: geo_delta
 end
