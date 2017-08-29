@@ -146,24 +146,20 @@ if (document.getElementById('live-map')) {
   }
 
   const toggleMarker = marker => {
+    hideAllTracks()
     if(!marker.selected) {
       PubSub.publish('marker.selected', marker.address)
       marker.selected = true
-      hideOtherTracks(marker)
       showTrack(marker)
     } else {
       PubSub.publish('marker.unselected', marker.address)
       marker.selected = false
-      hideTrack(marker)
     }
   }
 
-  const hideOtherTracks = marker => {
-    for(var i = 0; i < tracks.length; i++) {
-      let track = tracks[i];
-      if (track.marker.address != marker.address) {
-        hideTrack(track.marker)
-      }
+  const hideAllTracks = () => {
+    for(let address of Object.keys(tracks)) {
+      liveMap.removeLayer(tracks[address].track)
     }
   }
 
