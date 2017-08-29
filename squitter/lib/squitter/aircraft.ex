@@ -96,7 +96,7 @@ defmodule Squitter.Aircraft do
   end
 
   defp handle_msg(%{tc: :air_velocity, type_msg: %AirSpeed{} = as}, state) do
-    {:ok, %{state | airspeed_type: as.airspeed_type, velocity_kt: as.velocity_kt.as, heading: as.heading, vr: as.vert_rate, vr_src: as.vert_rate_src}}
+    {:ok, %{state | airspeed_type: as.airspeed_type, velocity_kt: as.velocity_kt, heading: as.heading, vr: as.vert_rate, vr_src: as.vert_rate_src}}
   end
 
   defp handle_msg(%{tc: {:surface_pos, _}}, state) do
