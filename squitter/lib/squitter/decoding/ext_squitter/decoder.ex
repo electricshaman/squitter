@@ -239,6 +239,8 @@ defmodule Squitter.Decoding.ExtSquitter do
   Decode velocity and heading.
   """
   def calculate_vector(sign_ew, sign_ns, v_ew, v_ns) do
+    import :math
+
     v_we = if sign_ew == 1 do
       -1 * (v_ew - 1)
     else
@@ -251,8 +253,8 @@ defmodule Squitter.Decoding.ExtSquitter do
       v_ns - 1
     end
 
-    v = :math.sqrt(:math.pow(v_we, 2) + :math.pow(v_sn, 2))
-    h = :math.atan2(v_we, v_sn) * (360/(2 * :math.pi))
+    v = sqrt(pow(v_we, 2) + pow(v_sn, 2))
+    h = atan2(v_we, v_sn) * (360/(2 * pi()))
 
     h = if h < 0, do: h + 360, else: h
 
