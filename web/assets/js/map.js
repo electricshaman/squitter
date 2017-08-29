@@ -1,6 +1,7 @@
 import chroma from 'chroma-js'
 import L from 'leaflet'
 import {PubSub} from 'pubsub-js'
+import 'leaflet-easybutton';
 
 require('leaflet-hotline')(L);
 
@@ -42,6 +43,8 @@ if (document.getElementById('live-map')) {
   rangeRingGroup.bringToBack()
   liveMap.fitBounds(rangeRingGroup.getBounds())
 
+  let trackGroup = L.layerGroup();
+
   let trackOptions = {
     smoothFactor: 2.0,
     weight: 2.0,
@@ -50,6 +53,28 @@ if (document.getElementById('live-map')) {
     min: altColorScaleMin,
     max: altColorScaleMax,
   }
+
+  let toggle = L.easyButton({
+    states: [{
+      stateName: 'show-all-tracks',
+      icon: 'glyphicon-eye-open',
+      title: 'Show All Tracks',
+      onClick: function(control) {
+        liveMap.addLayer(trackGroup);
+        control.state('hide-all-tracks');
+      }
+    }, {
+      icon: 'glyphicon-eye-close',
+      stateName: 'hide-all-tracks',
+      onClick: function(control) {
+        liveMap.removeLayer(trackGroup);
+        control.state('show-all-tracks');
+      },
+      title: 'Hide All Tracks'
+    }]
+  });
+
+  toggle.addTo(liveMap)
 
   // If using a circleMarker instead of an icon
   //let acMarkerOptions = {
@@ -100,6 +125,7 @@ if (document.getElementById('live-map')) {
     }
 
     let track = L.hotline(points, trackOptions)
+    trackGroup.addLayer(track)
 
     tracks[ac.address] = {
       track: track,
@@ -125,7 +151,7 @@ if (document.getElementById('live-map')) {
   })
 
   PubSub.subscribe('ac.removed', (topic, address) => {
-    removeAircraftFromMap(address, tracks, liveMap)
+    removeAircraftFromMap(address, tracks, liveMap, trackGroup)
     delete tracks[address]
   })
 
@@ -197,10 +223,11 @@ if (document.getElementById('live-map')) {
      ${ac.velocity_kt} kts<br />
      ${ac.heading}&deg;`
 
-  const removeAircraftFromMap = (address, track_hash, map) => {
+  const removeAircraftFromMap = (address, track_hash, map, track_group) => {
     let aircraft = track_hash[address]
     if (aircraft) {
       aircraft.track.removeFrom(map)
+      track_group.removeLayer(aircraft.track)
       aircraft.marker.removeFrom(map)
     }
   }
