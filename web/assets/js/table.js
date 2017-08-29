@@ -12,7 +12,7 @@ let table = $('#aircraft-table').DataTable({
     { data: 'address', title: 'Address'},
     { data: 'callsign', title: 'Callsign'},
     { data: 'altitude', title: 'Altitude',
-      className: "align-right",
+      className: 'align-right',
       render: (data, type, row) => {
         let alt = data.toLocaleString()
         switch(row.vr_dir) {
@@ -26,9 +26,9 @@ let table = $('#aircraft-table').DataTable({
       }
     },
     { data: 'velocity_kt', title: 'Speed'},
-    { data: 'distance', title: 'Distance'},
-    { data: 'heading', title: 'Heading', render: (data, type, row) => `${data}&deg;`},
-    { data: 'msgs', title: 'Msgs'},
+    { data: 'distance', title: 'Distance', render: data => data.toFixed(1)},
+    { data: 'heading', title: 'Heading', render: data => data !== null ? `${data}&deg;` : ''},
+    { data: 'msgs', title: 'Msgs', render: data => data.toLocaleString()},
     { data: 'age', title: 'Age'}
   ]
 });
