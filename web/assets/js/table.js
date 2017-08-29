@@ -24,7 +24,7 @@ let table = $('#aircraft-table').DataTable({
         }
       }
     },
-    { data: 'velocity_kt', title: 'Speed'},
+    { data: 'velocity_kt', title: 'Speed', render: data => data > 0 ? data.toLocaleString() : ''},
     { data: 'distance', title: 'Distance', render: data => data.toFixed(1)},
     { data: 'heading', title: 'Heading', render: data => data !== null ? `${data}&deg;` : ''},
     { data: 'msgs', title: 'Msgs', render: data => data.toLocaleString()},
