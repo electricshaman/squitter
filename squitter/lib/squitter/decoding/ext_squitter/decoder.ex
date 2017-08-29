@@ -122,7 +122,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   end
 
   @doc """
-  Decode the airborne velocity message (ground speed)
+  Decode the airborne velocity message (ground speed, true heading)
 
   | MSG Bits | DATA Bits | Len | Abbr   | Content                    |
   |----------|-----------|-----|--------|----------------------------|
@@ -144,7 +144,7 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: http://adsb-decode-guide.readthedocs.io/en/latest/content/airborne-velocity.html
   """
-  def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>) when st in [1, 2] do
+  def decode_type(:air_velocity, <<_ :: 37, sub :: 3, body :: binary>>) when sub in [1, 2] do
     <<ic      :: 1,
       _resv_a :: 1,
       nac     :: 3,
@@ -160,7 +160,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       dif     :: 7,
       _       :: binary>> = body
 
-    {velocity, heading} = calculate_vector(s_ew, s_ns, v_ew, v_ns)
+    {velocity, heading} = calculate_vector(s_ew, s_ns, v_ew, v_ns, sub)
 
     %GroundSpeed{
       intent_change: ic == 1,
@@ -170,11 +170,11 @@ defmodule Squitter.Decoding.ExtSquitter do
       vert_rate_src: vert_rate_source(vrsrc),
       vert_rate: vert_rate(vr, s_vr),
       geo_delta: geo_delta(dif, s_dif),
-      supersonic: st == 2}
+      supersonic: sub == 2}
   end
 
   @doc """
-  Decode the airborne velocity message (air speed)
+  Decode the airborne velocity message (air speed, magnetic heading)
 
   | MSG Bits | DATA Bits | Len | Abbr   | Content                        |
   |----------|-----------|-----|--------|--------------------------------|
@@ -196,7 +196,7 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: http://adsb-decode-guide.readthedocs.io/en/latest/content/airborne-velocity.html
   """
-  def decode_type(:air_velocity, <<_ :: 37, st :: 3, body :: binary>>) when st in [3, 4] do
+  def decode_type(:air_velocity, <<_ :: 37, sub :: 3, body :: binary>>) when sub in [3, 4] do
     <<ic      :: 1,
       _resv_a :: 1,
       nac     :: 3,
@@ -227,7 +227,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       vert_rate: vert_rate(vr, s_vr),
       vert_rate_src: vert_rate_source(vrsrc),
       geo_delta: geo_delta(dif, s_dif),
-      supersonic: st == 4}
+      supersonic: sub == 4}
   end
 
   def decode_type(_type, _msg) do
@@ -238,23 +238,14 @@ defmodule Squitter.Decoding.ExtSquitter do
   @doc """
   Decode velocity and heading.
   """
-  def calculate_vector(sign_ew, sign_ns, v_ew, v_ns) do
+  def calculate_vector(sign_ew, sign_ns, v_ew, v_ns, sub) do
     import :math
 
-    v_we = if sign_ew == 1 do
-      -1 * (v_ew - 1)
-    else
-      v_ew - 1
-    end
+    vel_ew = apply_sign(v_ew - 1, sign_ew) * (if sub == 2, do: 4, else: 1)
+    vel_ns = apply_sign(v_ns - 1, sign_ns) * (if sub == 2, do: 4, else: 1)
 
-    v_sn = if sign_ns == 1 do
-      -1 * (v_ns - 1)
-    else
-      v_ns - 1
-    end
-
-    v = sqrt(pow(v_we, 2) + pow(v_sn, 2))
-    h = atan2(v_we, v_sn) * (360/(2 * pi()))
+    v = sqrt(pow(vel_ew, 2) + pow(vel_ns, 2) + 0.5)
+    h = atan2(vel_ew, vel_ns) * 180.0 / pi() + 0.5
 
     h = if h < 0, do: h + 360, else: h
 
@@ -269,13 +260,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   def vert_rate(1, _sign),
     do: 0
   def vert_rate(raw_vr, sign),
-    do: vr_dir(raw_vr * 64, sign)
-
-  @doc """
-  Apply the sign to the provided vertical rate.
-  """
-  def vr_dir(vr, sign),
-    do: if sign == 1, do: -vr, else: vr
+    do: apply_sign(raw_vr * 64, sign)
 
   @doc """
   Decode vertical rate source.
@@ -353,11 +338,12 @@ defmodule Squitter.Decoding.ExtSquitter do
   def geo_delta(1, _sign),
     do: 0
   def geo_delta(raw_delta, sign),
-    do: geo_delta_dir(raw_delta * 25, sign)
+    do: apply_sign(raw_delta * 25, sign)
 
-  @doc """
-  Apply the sign to the provided geo delta.
-  """
-  def geo_delta_dir(geo_delta, sign),
-    do: if sign == 1, do: -geo_delta, else: geo_delta
+  # Private Helpers
+
+  defp apply_sign(value, sign) do
+    # When the sign bit is 1, the value is negative.
+    if sign == 1, do: -value, else: value
+  end
 end
