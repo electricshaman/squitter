@@ -264,21 +264,18 @@ defmodule Squitter.Decoding.ExtSquitter do
   @doc """
   Decode vertical rate.
   """
-  def vert_rate(vr, sign_vr) do
-    if vr == 0, do: 0, else: vr_dir((vr - 1) * 64, sign_vr)
-  end
+  def vert_rate(0, _sign),
+    do: nil
+  def vert_rate(1, _sign),
+    do: 0
+  def vert_rate(raw_vr, sign),
+    do: vr_dir(raw_vr * 64, sign)
 
   @doc """
-  Decode the sign of vertical rate.  Applies sign directly to the provided rate.
+  Apply the sign to the provided vertical rate.
   """
-  def vr_dir(vr, sign_vr) do
-    cond do
-      vr == 1 -> 0
-      sign_vr == 0 -> vr
-      sign_vr == 1 -> -vr
-      true -> 0
-    end
-  end
+  def vr_dir(vr, sign),
+    do: if sign == 1, do: -vr, else: vr
 
   @doc """
   Decode vertical rate source.
