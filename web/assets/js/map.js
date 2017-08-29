@@ -51,13 +51,14 @@ if (document.getElementById('live-map')) {
     max: altColorScaleMax,
   }
 
-  let acMarkerOptions = {
-    fillOpacity: 1.0,
-    stroke: false,
-    fillColor: '#854aa7',
-    radius: 6,
-    interactive: true
-  }
+  // If using a circleMarker instead of an icon
+  //let acMarkerOptions = {
+  //  fillOpacity: 1.0,
+  //  stroke: false,
+  //  fillColor: '#854aa7',
+  //  radius: 6,
+  //  interactive: true
+  //}
 
   let ttipOptions = {
     direction: 'right',
@@ -68,11 +69,19 @@ if (document.getElementById('live-map')) {
   PubSub.subscribe('ac.created', (topic, ac) => {
     // Add new aircraft
     let ttip = L.tooltip(ttipOptions)
-    let marker = L.circleMarker(ac.latlon, acMarkerOptions)
+
+    let icon = L.divIcon({
+      className: 'ac-icon',
+      iconAnchor: [10, 20],
+      html: '<div><span class="glyphicon glyphicon-plane"></span></div>'
+    })
+
+    let marker = L.marker(ac.latlon, {icon: icon})
     .bindTooltip(ttip)
     .setTooltipContent(formatTooltipContent(ac))
     .addTo(liveMap)
 
+    rotateMarker(marker, ac.heading)
     setMarkerColor(marker, altColorScale(ac.altitude))
 
     marker.address = ac.address
@@ -109,6 +118,7 @@ if (document.getElementById('live-map')) {
 
     aircraft.track.setLatLngs(updatedTrack)
 
+    rotateMarker(aircraft.marker, ac.heading)
     setMarkerColor(aircraft.marker, altColorScale(ac.altitude))
     aircraft.marker.setLatLng(ac.latlon)
       .setTooltipContent(formatTooltipContent(ac))
@@ -143,6 +153,12 @@ if (document.getElementById('live-map')) {
   const handleMarkerClick = ev => {
     let marker = ev.target
     toggleMarker(marker)
+  }
+
+  const rotateMarker = (marker, angle) => {
+    let element = marker.getElement()
+    let iconSpan = element.firstElementChild.firstElementChild
+    iconSpan.style.transform = `rotateZ(${angle}deg)`
   }
 
   const toggleMarker = marker => {
@@ -190,6 +206,8 @@ if (document.getElementById('live-map')) {
   }
 
   const setMarkerColor = (marker, color) => {
-    marker.setStyle({fillColor: color})
+    let element = marker.getElement()
+    element.style.color = color
+    //marker.setStyle({fillColor: color})
   }
 }
