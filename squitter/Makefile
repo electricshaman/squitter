@@ -28,7 +28,7 @@ priv:
 	mkdir -p priv
 
 priv/modes.so: src/modes.c
-	$(CC) $^ $(ERL_CFLAGS) $(CFLAGS) -shared -o $@
+	$(CC) $^ $(ERL_CFLAGS) $(LDFLAGS) $(CFLAGS) -shared -o $@
 
 clean:
 	$(RM) priv/modes.so
