@@ -41,7 +41,6 @@ defmodule Squitter.Firmware.Mixfile do
 
   def deps do
     [{:nerves, "~> 0.7"},
-     {:nerves_firmware_ssh, github: "fhunleth/nerves_firmware_ssh"},
      {:squitter_web, path: "../web"},
      {:squitter, path: "../squitter"},
      deps(@target)]
@@ -52,6 +51,7 @@ defmodule Squitter.Firmware.Mixfile do
     [system(target),
      {:bootloader, "~> 0.1"},
      {:nerves_network, "~> 0.3.0"},
+     {:nerves_firmware_ssh, github: "fhunleth/nerves_firmware_ssh"},
      {:nerves_init_net_kernel, github: "mobileoverlord/nerves_init_net_kernel", tag: "v0.1.0"},
      {:nerves_runtime, "~> 0.4"}]
   end
