@@ -56,8 +56,7 @@ defmodule Squitter.Firmware.Mixfile do
      {:nerves_runtime, "~> 0.4"}]
   end
 
-  # TODO: Put this on Hex and provide an artifact.
-  def system("rpi3"), do: {:nerves_system_rpi3_sdr, github: "electricshaman/nerves_system_rpi3_sdr", runtime: false}
+  def system("rpi3"), do: {:nerves_system_rpi3_sdr, "~> 0.15.1", runtime: false}
   #def system("rpi0"), do: {:nerves_system_rpi0, ">= 0.0.0", runtime: false}
   def system(target), do: Mix.raise "Unknown MIX_TARGET: #{target}"
 
