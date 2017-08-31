@@ -1,10 +1,11 @@
 defmodule Squitter.AvrTcpStage do
   use GenStage
   require Logger
-  alias Squitter.AVR
+  alias Squitter.{AVR, StatsTracker}
   import Squitter.Decoding.Utils, only: [hex_to_bin: 1]
 
-  @max_conn_attempts 10
+  @max_conn_attempts      10
+  @valid_frame_size_bits  [56, 112]
 
   def start_link(host, port, partitions) do
     Logger.debug "Starting up #{__MODULE__}"
@@ -14,7 +15,7 @@ defmodule Squitter.AvrTcpStage do
   def init([host, port, partitions]) do
     send(self(), :connect)
 
-    hash_function = fn({t,f} = m) ->
+    hash_function = fn({_t,f} = m) ->
       {:ok, address} = Squitter.Decoding.ModeS.icao_address(f)
       partition = :erlang.phash2(address, length(partitions))
       {m, partition}
@@ -38,8 +39,11 @@ defmodule Squitter.AvrTcpStage do
     indexed_frames =
       frames
       |> Enum.map(&hex_to_bin/1)
+      |> Enum.filter(&is_valid_frame/1)
       |> Enum.with_index(time)
       |> Enum.map(fn {frame, time} -> {time, frame} end)
+
+    StatsTracker.count(:dropped, length(frames) - length(indexed_frames))
 
     {:noreply, indexed_frames, %{state | buffer: next_buffer}}
   end
@@ -67,4 +71,12 @@ defmodule Squitter.AvrTcpStage do
   def handle_demand(_demand, state) do
     {:noreply, [], state}
   end
+
+  # Occasionally dump1090 sends frames consisting of only 2 null bytes for unknown reasons.
+  # Filter these out up front so that our hashing function on ICAO address never fails.
+  defp is_valid_frame(frame)
+    when bit_size(frame) in @valid_frame_size_bits, do: true
+  defp is_valid_frame(_frame),
+    do: false
+
 end
