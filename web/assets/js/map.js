@@ -218,10 +218,11 @@ if (document.getElementById('live-map')) {
   }
 
   const formatTooltipContent = ac =>
-    `<strong>${(ac.callsign != "" ? ac.callsign : "???????")}</strong><br />
+    `<strong>${(ac.callsign ? ac.callsign : "???????")}</strong><br />
+     ${(ac.registration ? ac.registration + '<br />' : '')}
      ${ac.altitude.toLocaleString()} ft<br />
      ${ac.velocity_kt} kts<br />
-     ${ac.heading}&deg;`
+     ${(ac.heading != null ? ac.heading + '&deg;' : '')}`
 
   const removeAircraftFromMap = (address, track_hash, map, track_group) => {
     let aircraft = track_hash[address]

@@ -15,7 +15,7 @@ defmodule Squitter.Application do
       worker(Squitter.StateReport, []),
       registry_supervisor(Squitter.AircraftRegistry, :unique, [Squitter.StateReport]),
       worker(Squitter.Site, [site[:location], site[:range_limit]]),
-      worker(Squitter.AircraftLookup, []),
+      worker(Squitter.MasterLookup, []),
       worker(Squitter.StatsTracker, [10000]),
       supervisor(Squitter.AircraftSupervisor, []),
       supervisor(Squitter.DecodingSupervisor, [])

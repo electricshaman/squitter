@@ -6,28 +6,26 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
-  alias Squitter.{AircraftLookup, Site, Decoding.CPR, StateReport, StatsTracker}
+  alias Squitter.{MasterLookup, Site, Decoding.CPR, StateReport, StatsTracker}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @air_pos_time_delta_max_s   5.0
   @air_pos_dist_delta_max_nm  100.0
   @timeout_period_s           60
   @clock_s                    1
+  @master_attempts            10
+  @master_attempt_interval    15000
 
   def start_link(address) do
     GenServer.start_link(__MODULE__, [address], name: {:via, Registry, {Squitter.AircraftRegistry, address}})
   end
 
   def init([address]) do
-    reg =
-      case AircraftLookup.get_registration(address) do
-        {:ok, registration} -> registration
-        {:error, _} -> ""
-      end
-
-    {:ok, country} = AircraftLookup.get_country(address)
+    country = Squitter.CountryLookup.get(address)
 
     schedule_tick()
+
+    send(self(), {:try_master, 1})
 
     {:ok, %{
       address: address,
@@ -44,11 +42,11 @@ defmodule Squitter.Aircraft do
       heading: nil,
       vr: 0,
       vr_src: nil,
-      registration: reg,
       squawk: "",
       distance: 0.0,
       position_history: [],
       timeout_enabled: true,
+      master: %{},
       last_received: System.monotonic_time(:seconds),
       age: 0}}
   end
@@ -194,6 +192,10 @@ defmodule Squitter.Aircraft do
     |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
       :heading, :vr, :address, :age, :distance, :country, :position_history])
     |> Map.put(:latlon, state.latlon)
+    |> Map.put(:registration, case state.master do
+         %MasterLookup{n_number: n_number} -> "N" <> n_number
+         %{} -> ""
+       end)
   end
 
   def calculate_position(%{last_even_position: even, last_odd_position: odd} = state) when is_nil(even) or is_nil(odd) do
@@ -240,6 +242,21 @@ defmodule Squitter.Aircraft do
       |> report
       schedule_tick()
       {:noreply, new_state}
+    end
+  end
+
+  def handle_info({:try_master, attempt}, state) do
+    case MasterLookup.get(state.address) do
+      {:ok, master} -> {:noreply, %{state | master: master}}
+      {:error, _} ->
+        if attempt < @master_attempts do
+          next_attempt = attempt + 1
+          Logger.debug "Scheduling attempt #{next_attempt} to retrieve master data for #{state.address}"
+          Process.send_after(self(), {:try_master, next_attempt}, @master_attempt_interval)
+        else
+          Logger.debug "Giving up trying to get master data for #{state.address}"
+        end
+        {:noreply, state}
     end
   end
 
