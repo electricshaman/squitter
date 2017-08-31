@@ -17,10 +17,6 @@ defmodule Squitter.StateReport do
     GenServer.cast(__MODULE__, {:state_changed, address, ac_state})
   end
 
-  def age_changed(address, age) do
-    GenServer.cast(__MODULE__, {:age_changed, address, age})
-  end
-
   # Server
 
   def init(table) do
@@ -45,16 +41,6 @@ defmodule Squitter.StateReport do
     {:noreply, {table, aircraft}}
   end
 
-  def handle_cast({:age_changed, address, age}, {table, aircraft}) do
-    case :ets.lookup(table, address) do
-      [] ->
-        {:noreply, {table, aircraft}}
-      [{^address, ac_state}] ->
-        :ets.insert(table, {address, Map.replace(ac_state, :age, age)})
-        {:noreply, {table, aircraft}}
-    end
-  end
-
   def handle_info({:register, Squitter.AircraftRegistry, address, pid, _}, {table, {left, right}}) do
     ref = Process.monitor(pid)
     new_aircraft = {Map.put(left, address, ref), Map.put(right, ref, address)}
@@ -67,7 +53,7 @@ defmodule Squitter.StateReport do
       case Map.pop(left, address) do
         {nil, ^left} -> left
         {ref, new_left} when is_reference(ref) ->
-          Logger.debug("Cleaning up report for #{address}")
+          Logger.debug("Cleaning up for #{address}")
           true = cleanup(table, address, ref)
           new_right = Map.delete(right, ref)
           {new_left, new_right}
@@ -81,7 +67,7 @@ defmodule Squitter.StateReport do
       case Map.pop(right, ref) do
         {nil, ^right} -> right
         {address, new_right} when is_binary(address) ->
-          Logger.debug("Cleaning up report for #{address}")
+          Logger.debug("Cleaning up for #{address}")
           true = cleanup(table, address, ref)
           new_left = Map.delete(left, address)
           {new_left, new_right}

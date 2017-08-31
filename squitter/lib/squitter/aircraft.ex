@@ -57,7 +57,9 @@ defmodule Squitter.Aircraft do
     case handle_msg(msg, state) do
       {:ok, new_state} ->
         new_state = set_received(new_state)
-        report(:state_report, build_report(new_state), new_state)
+        new_state
+        |> build_view
+        |> report
         {:noreply, new_state}
       {:error, _} ->
         {:noreply, state}
@@ -187,7 +189,7 @@ defmodule Squitter.Aircraft do
     {:ok, state}
   end
 
-  defp build_report(state) do
+  defp build_view(state) do
     state
     |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
       :heading, :vr, :address, :age, :distance, :country, :position_history])
@@ -233,7 +235,9 @@ defmodule Squitter.Aircraft do
     if state.timeout_enabled && timeout_expired?(new_state) do
       {:stop, {:shutdown, :timeout}, new_state}
     else
-      report(:age, %{address: state.address, age: new_state.age}, state)
+      new_state
+      |> build_view
+      |> report
       schedule_tick()
       {:noreply, new_state}
     end
@@ -279,17 +283,13 @@ defmodule Squitter.Aircraft do
     end
   end
 
-  defp report(:age, %{address: address, age: age}, _state) do
-    StateReport.age_changed(address, age)
-  end
-
-  defp report(:state_report, report, _state) do
+  defp report(report) do
     # Only update the state report for aircraft where:
     # - We've received more than 1 message
     # - We have position data
     # - The latest position is within the site range limit
     {:ok, range_limit} = Site.range_limit()
-    # TODO: Figure out what to do about aircraft that cross the range threshold
+    # TODO: Figure out what to do about aircraft that cross over the range threshold
     if report.msgs > 1 && length(report.position_history) > 0 && report.distance <= range_limit do
       StateReport.state_changed(report.address, report)
     end
