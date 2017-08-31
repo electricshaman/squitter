@@ -58,6 +58,7 @@ defmodule Squitter.AvrTcpStage do
   end
 
   def handle_info(:connect, %{host: host, port: port, socket: nil, attempts: attempts} = state) do
+    # TODO: Use Connection lib.
     case :gen_tcp.connect(to_charlist(host), port, [{:active, true}]) do
       {:ok, socket} ->
         {:noreply, [], %{state | socket: socket}}
