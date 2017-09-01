@@ -13,14 +13,14 @@ if (document.getElementById('live-map')) {
   const altColorBands = ['darkseagreen', 'navy', 'fuchsia']
   const altColorScale = chroma.scale(altColorBands).mode('lch').domain([altColorScaleMin, altColorScaleMax]);
 
-  var palette = {};
-  for(var alt = altColorScaleMin; alt <= altColorScaleMax; alt += altColorScaleStep) {
+  const palette = {};
+  for(let alt = altColorScaleMin; alt <= altColorScaleMax; alt += altColorScaleStep) {
     palette[alt/altColorScaleMax] = altColorScale(alt).hex()
   }
 
   const tracks = {}
 
-  var liveMap = L.map('live-map')
+  let liveMap = L.map('live-map')
   L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/{style}/{z}/{x}/{y}.png', {
     style: 'light_all',
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
@@ -39,14 +39,14 @@ if (document.getElementById('live-map')) {
       interactive: false
     }))
 
-  let rings = createRangeRings(SITE_LOCATION)
-  let rangeRingGroup = L.featureGroup(rings).addTo(liveMap)
+  const rings = createRangeRings(SITE_LOCATION)
+  const rangeRingGroup = L.featureGroup(rings).addTo(liveMap)
   rangeRingGroup.bringToBack()
   liveMap.fitBounds(rangeRingGroup.getBounds())
 
-  let trackGroup = L.layerGroup();
+  const trackGroup = L.layerGroup();
 
-  let trackOptions = {
+  const trackOptions = {
     smoothFactor: 2.0,
     weight: 2.0,
     outlineWidth: 0,
@@ -55,12 +55,12 @@ if (document.getElementById('live-map')) {
     max: altColorScaleMax,
   }
 
-  let heat = L.heatLayer([], {
+  const heat = L.heatLayer([], {
     radius: 5,
     blur: 5
   })
 
-  let toggleTracks = L.easyButton({
+  const toggleTracks = L.easyButton({
     states: [{
       stateName: 'show-all-tracks',
       icon: 'glyphicon-eye-open',
@@ -82,7 +82,7 @@ if (document.getElementById('live-map')) {
 
   toggleTracks.addTo(liveMap)
 
-  let toggleHeat = L.easyButton({
+  const toggleHeat = L.easyButton({
     states: [{
       stateName: 'show-heatmap',
       icon: 'glyphicon-fire',
@@ -113,7 +113,7 @@ if (document.getElementById('live-map')) {
   //  interactive: true
   //}
 
-  let ttipOptions = {
+  const ttipOptions = {
     direction: 'right',
     offset: [10, 0],
     opacity: 0.9,
@@ -121,15 +121,15 @@ if (document.getElementById('live-map')) {
 
   PubSub.subscribe('ac.created', (topic, ac) => {
     // Add new aircraft
-    let ttip = L.tooltip(ttipOptions)
+    const ttip = L.tooltip(ttipOptions)
 
-    let icon = L.divIcon({
+    const icon = L.divIcon({
       className: 'ac-icon',
       iconAnchor: [10, 20],
       html: '<div><span class="glyphicon glyphicon-plane"></span></div>'
     })
 
-    let marker = L.marker(ac.latlon, {icon: icon})
+    const marker = L.marker(ac.latlon, {icon: icon})
     .bindTooltip(ttip)
     .setTooltipContent(formatTooltipContent(ac))
     .addTo(liveMap)
@@ -144,20 +144,20 @@ if (document.getElementById('live-map')) {
     marker.on('mouseover', handleMarkerMouseOver)
     marker.on('mouseout', handleMarkerMouseOut)
 
-    let points = [];
+    const points = [];
     if (ac.position_history) {
       ac.position_history.forEach(p => points.push(p))
     } else {
-      let [lat, lon] = ac.latlon
+      const [lat, lon] = ac.latlon
       points.push([lat, lon, ac.altitude]);
     }
 
     points.forEach(p => {
-      let [lat, lon, alt] = p
-      heat.addLatLng([lat, lon])
+      const [lat, lon, alt] = p
+      heat.addLatLng([lat, lon, 1.0])
     })
 
-    let track = L.hotline(points, trackOptions)
+    const track = L.hotline(points, trackOptions)
     trackGroup.addLayer(track)
 
     tracks[ac.address] = {
@@ -168,15 +168,15 @@ if (document.getElementById('live-map')) {
 
   PubSub.subscribe('ac.updated', (topic, ac) => {
     // Update existing aircraft
-    var aircraft = tracks[ac.address]
+    const aircraft = tracks[ac.address]
 
-    var [lat, lon] = ac.latlon
-    let updatedTrack = aircraft.track.getLatLngs()
+    const [lat, lon] = ac.latlon
+    const updatedTrack = aircraft.track.getLatLngs()
       .map(p => [p.lat, p.lng, p.alt])
       .concat([[lat, lon, ac.altitude]])
 
     aircraft.track.setLatLngs(updatedTrack)
-    heat.addLatLng(ac.latlon)
+    heat.addLatLng([lat, lon, 1.0])
 
     rotateMarker(aircraft.marker, ac.heading)
     setMarkerColor(aircraft.marker, altColorScale(ac.altitude))
@@ -190,34 +190,34 @@ if (document.getElementById('live-map')) {
   })
 
   PubSub.subscribe('ac.selected', (topic, address) => {
-    let ac = tracks[address]
+    const ac = tracks[address]
     if (ac) {
       toggleMarker(ac.marker)
     }
   })
 
   const handleMarkerMouseOver = ev => {
-    let marker = ev.target
+    const marker = ev.target
     if (!marker.selected) {
       showTrack(marker)
     }
   }
 
   const handleMarkerMouseOut = ev => {
-    let marker = ev.target
+    const marker = ev.target
     if (!marker.selected) {
       hideTrack(marker)
     }
   }
 
   const handleMarkerClick = ev => {
-    let marker = ev.target
+    const marker = ev.target
     toggleMarker(marker)
   }
 
   const rotateMarker = (marker, angle) => {
-    let element = marker.getElement()
-    let iconSpan = element.firstElementChild.firstElementChild
+    const element = marker.getElement()
+    const iconSpan = element.firstElementChild.firstElementChild
     iconSpan.style.transform = `rotateZ(${angle}deg)`
   }
 
@@ -240,14 +240,14 @@ if (document.getElementById('live-map')) {
   }
 
   const showTrack = marker => {
-    let addr = marker.address
-    let track = tracks[addr].track
+    const addr = marker.address
+    const track = tracks[addr].track
     liveMap.addLayer(track)
   }
 
   const hideTrack = marker => {
-    let addr = marker.address
-    let track = tracks[addr].track
+    const addr = marker.address
+    const track = tracks[addr].track
     liveMap.removeLayer(track)
   }
 
@@ -259,7 +259,7 @@ if (document.getElementById('live-map')) {
      ${(ac.heading != null ? ac.heading + '&deg;' : '')}`
 
   const removeAircraftFromMap = (address, track_hash, map, track_group) => {
-    let aircraft = track_hash[address]
+    const aircraft = track_hash[address]
     if (aircraft) {
       aircraft.track.removeFrom(map)
       track_group.removeLayer(aircraft.track)
@@ -268,7 +268,7 @@ if (document.getElementById('live-map')) {
   }
 
   const setMarkerColor = (marker, color) => {
-    let element = marker.getElement()
+    const element = marker.getElement()
     element.style.color = color
     //marker.setStyle({fillColor: color})
   }
