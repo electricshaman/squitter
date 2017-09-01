@@ -20,7 +20,7 @@ if (document.getElementById('live-map')) {
 
   const tracks = {}
 
-  let liveMap = L.map('live-map')
+  const liveMap = L.map('live-map')
   L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/{style}/{z}/{x}/{y}.png', {
     style: 'light_all',
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
