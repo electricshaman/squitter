@@ -2,6 +2,7 @@ import chroma from 'chroma-js'
 import L from 'leaflet'
 import {PubSub} from 'pubsub-js'
 import 'leaflet-easybutton';
+import 'leaflet.heat';
 
 require('leaflet-hotline')(L);
 
@@ -54,7 +55,12 @@ if (document.getElementById('live-map')) {
     max: altColorScaleMax,
   }
 
-  let toggle = L.easyButton({
+  let heat = L.heatLayer([], {
+    radius: 5,
+    blur: 5
+  })
+
+  let toggleTracks = L.easyButton({
     states: [{
       stateName: 'show-all-tracks',
       icon: 'glyphicon-eye-open',
@@ -74,7 +80,29 @@ if (document.getElementById('live-map')) {
     }]
   });
 
-  toggle.addTo(liveMap)
+  toggleTracks.addTo(liveMap)
+
+  let toggleHeat = L.easyButton({
+    states: [{
+      stateName: 'show-heatmap',
+      icon: 'glyphicon-fire',
+      title: 'Toggle Heatmap',
+      onClick: function(control) {
+        liveMap.addLayer(heat);
+        control.state('hide-heatmap');
+      }
+    }, {
+      icon: 'glyphicon-fire',
+      stateName: 'hide-heatmap',
+      onClick: function(control) {
+        liveMap.removeLayer(heat);
+        control.state('show-heatmap');
+      },
+      title: 'Toggle Heatmap'
+    }]
+  });
+
+  toggleHeat.addTo(liveMap)
 
   // If using a circleMarker instead of an icon
   //let acMarkerOptions = {
@@ -124,6 +152,11 @@ if (document.getElementById('live-map')) {
       points.push([lat, lon, ac.altitude]);
     }
 
+    points.forEach(p => {
+      let [lat, lon, alt] = p
+      heat.addLatLng([lat, lon])
+    })
+
     let track = L.hotline(points, trackOptions)
     trackGroup.addLayer(track)
 
@@ -143,6 +176,7 @@ if (document.getElementById('live-map')) {
       .concat([[lat, lon, ac.altitude]])
 
     aircraft.track.setLatLngs(updatedTrack)
+    heat.addLatLng(ac.latlon)
 
     rotateMarker(aircraft.marker, ac.heading)
     setMarkerColor(aircraft.marker, altColorScale(ac.altitude))
