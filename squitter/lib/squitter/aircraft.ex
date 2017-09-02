@@ -190,7 +190,8 @@ defmodule Squitter.Aircraft do
   defp build_view(state) do
     state
     |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
-      :heading, :vr, :address, :age, :distance, :country, :position_history])
+      :heading, :vr, :address, :age, :distance, :country])
+    |> Map.put(:position_history, Enum.reverse(state.position_history)) # Reverse so most recent is at the end
     |> Map.put(:latlon, state.latlon)
     |> Map.put(:registration, case state.master do
          %MasterLookup{n_number: n_number} -> "N" <> n_number
@@ -215,9 +216,8 @@ defmodule Squitter.Aircraft do
 
       position = latlon ++ [state.altitude]
 
-      pos_history =
-        [position | state.position_history]
-        |> Enum.reverse
+      # Most recent position is the head of the list
+      pos_history = [position|state.position_history]
 
       {:ok, %{state | latlon: latlon, distance: distance, position_history: pos_history}}
     else
