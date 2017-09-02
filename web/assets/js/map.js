@@ -3,22 +3,21 @@ import L from 'leaflet'
 import {PubSub} from 'pubsub-js'
 import 'leaflet-easybutton';
 import 'leaflet.heat';
-
+import simplify from 'simplify-js'
 require('leaflet-hotline')(L);
 
 if (document.getElementById('live-map')) {
+  const tracks = {}
   const altColorScaleMin = 1000
   const altColorScaleMax = 39000
   const altColorScaleStep = 5000
   const altColorBands = ['darkseagreen', 'navy', 'fuchsia']
-  const altColorScale = chroma.scale(altColorBands).mode('lch').domain([altColorScaleMin, altColorScaleMax]);
+  const altColorScale = chroma.scale(altColorBands).mode('lch').domain([altColorScaleMin, altColorScaleMax])
+  const palette = {}
 
-  const palette = {};
   for(let alt = altColorScaleMin; alt <= altColorScaleMax; alt += altColorScaleStep) {
     palette[alt/altColorScaleMax] = altColorScale(alt).hex()
   }
-
-  const tracks = {}
 
   const liveMap = L.map('live-map')
   L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/{style}/{z}/{x}/{y}.png', {
@@ -26,7 +25,7 @@ if (document.getElementById('live-map')) {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
   }).addTo(liveMap)
 
-  liveMap.setView(SITE_LOCATION, 7)
+  liveMap.setView(SITE_LOCATION, 10)
 
   // Range rings
   const createRangeRings = center =>
@@ -44,8 +43,7 @@ if (document.getElementById('live-map')) {
   rangeRingGroup.bringToBack()
   liveMap.fitBounds(rangeRingGroup.getBounds())
 
-  const trackGroup = L.layerGroup();
-
+  const trackGroup = L.layerGroup()
   const trackOptions = {
     smoothFactor: 2.0,
     weight: 2.0,
@@ -55,10 +53,31 @@ if (document.getElementById('live-map')) {
     max: altColorScaleMax,
   }
 
-  const heat = L.heatLayer([], {
-    radius: 5,
-    blur: 5
-  })
+  const posChangeMarkerOptions = {
+    radius: 3,
+    stroke: false,
+    fillOpacity: 0.3,
+  }
+
+  const togglePosChanges = L.easyButton({
+    states: [{
+      stateName: 'show-pos-changes',
+      icon: 'glyphicon-option-horizontal',
+      title: 'Show Position Changes',
+      onClick: function(control) {
+        showAllPosChanges()
+        control.state('hide-pos-changes')
+      }
+    }, {
+      icon: 'glyphicon-option-horizontal',
+      stateName: 'hide-pos-changes',
+      onClick: function(control) {
+        hideAllPosChanges()
+        control.state('show-pos-changes')
+      },
+      title: 'Hide Position Changes'
+    }]
+  }).addTo(liveMap)
 
   const toggleTracks = L.easyButton({
     states: [{
@@ -78,9 +97,12 @@ if (document.getElementById('live-map')) {
       },
       title: 'Hide All Tracks'
     }]
-  });
+  }).addTo(liveMap)
 
-  toggleTracks.addTo(liveMap)
+  const heat = L.heatLayer([], {
+    radius: 20,
+    blur: 10
+  })
 
   const toggleHeat = L.easyButton({
     states: [{
@@ -100,18 +122,7 @@ if (document.getElementById('live-map')) {
       },
       title: 'Toggle Heatmap'
     }]
-  });
-
-  toggleHeat.addTo(liveMap)
-
-  // If using a circleMarker instead of an icon
-  //let acMarkerOptions = {
-  //  fillOpacity: 1.0,
-  //  stroke: false,
-  //  fillColor: '#854aa7',
-  //  radius: 6,
-  //  interactive: true
-  //}
+  }).addTo(liveMap)
 
   const ttipOptions = {
     direction: 'right',
@@ -144,16 +155,13 @@ if (document.getElementById('live-map')) {
     marker.on('mouseover', handleMarkerMouseOver)
     marker.on('mouseout', handleMarkerMouseOut)
 
-    const points = [];
-    if (ac.position_history) {
-      ac.position_history.forEach(p => points.push(p))
-    } else {
-      const [lat, lon] = ac.latlon
-      points.push([lat, lon, ac.altitude]);
-    }
+    const points = getInitialTrackPoints(ac)
+    const posChangeGroup = L.layerGroup()
 
     points.forEach(p => {
       const [lat, lon, alt] = p
+      const altColor = altColorScale(alt)
+      posChangeGroup.addLayer(createPositionChangeMarker(p, altColor))
       heat.addLatLng([lat, lon, 1.0])
     })
 
@@ -162,7 +170,8 @@ if (document.getElementById('live-map')) {
 
     tracks[ac.address] = {
       track: track,
-      marker: marker
+      marker: marker,
+      posChanges: posChangeGroup
     }
   })
 
@@ -170,18 +179,25 @@ if (document.getElementById('live-map')) {
     // Update existing aircraft
     const aircraft = tracks[ac.address]
 
+    const prevPositions = aircraft.track.getLatLngs()
+    const lastPos = prevPositions.length > 0 ? prevPositions[prevPositions.length - 1] : L.latLng(0, 0)
+
     const [lat, lon] = ac.latlon
-    const updatedTrack = aircraft.track.getLatLngs()
-      .map(p => [p.lat, p.lng, p.alt])
-      .concat([[lat, lon, ac.altitude]])
 
-    aircraft.track.setLatLngs(updatedTrack)
-    heat.addLatLng([lat, lon, 1.0])
+    // Only add new position if it changes
+    if (lat != lastPos.lat && lon != lastPos.lng) {
+      const position = [lat, lon, ac.altitude]
+      const altColor = altColorScale(ac.altitude)
 
-    rotateMarker(aircraft.marker, ac.heading)
-    setMarkerColor(aircraft.marker, altColorScale(ac.altitude))
-    aircraft.marker.setLatLng(ac.latlon)
-      .setTooltipContent(formatTooltipContent(ac))
+      aircraft.track.addLatLng(position)
+      heat.addLatLng([lat, lon, 1.0])
+      aircraft.posChanges.addLayer(createPositionChangeMarker(position, altColor))
+
+      rotateMarker(aircraft.marker, ac.heading)
+      setMarkerColor(aircraft.marker, altColor)
+      aircraft.marker.setLatLng(ac.latlon)
+        .setTooltipContent(formatTooltipContent(ac))
+    }
   })
 
   PubSub.subscribe('ac.removed', (topic, address) => {
@@ -196,11 +212,24 @@ if (document.getElementById('live-map')) {
     }
   })
 
+  const createPositionChangeMarker = (point, color) => L.circleMarker(point, Object.assign(posChangeMarkerOptions, {fillColor: color}))
+
+  const getInitialTrackPoints = aircraft => {
+    if (aircraft.position_history) {
+      // Thin out the historical points in case we have a ton
+      // x = longitude, y = latitude
+      const pointsToSimplify = aircraft.position_history.map(p => ({x: p[1], y: p[0], z: p[2]}))
+      const simplifiedPoints = simplify(pointsToSimplify, 0.10)
+      // Put the simplified points back into the format expected by Leaflet
+      return simplifiedPoints.map(p => [p.y, p.x, p.z])
+    } else {
+      return [aircraft.latlon.concat([aircraft.altitude])]
+    }
+  }
+
   const handleMarkerMouseOver = ev => {
     const marker = ev.target
-    if (!marker.selected) {
-      showTrack(marker)
-    }
+    showTrack(marker)
   }
 
   const handleMarkerMouseOut = ev => {
@@ -224,18 +253,30 @@ if (document.getElementById('live-map')) {
   const toggleMarker = marker => {
     hideAllTracks()
     if(!marker.selected) {
-      PubSub.publish('marker.selected', marker.address)
       marker.selected = true
       showTrack(marker)
+      PubSub.publish('marker.selected', marker.address)
     } else {
-      PubSub.publish('marker.unselected', marker.address)
       marker.selected = false
+      PubSub.publish('marker.unselected', marker.address)
     }
   }
 
   const hideAllTracks = () => {
     for(let address of Object.keys(tracks)) {
       liveMap.removeLayer(tracks[address].track)
+    }
+  }
+
+  const showAllPosChanges = () => {
+    for(let address of Object.keys(tracks)) {
+      liveMap.addLayer(tracks[address].posChanges)
+    }
+  }
+
+  const hideAllPosChanges = () => {
+    for(let address of Object.keys(tracks)) {
+      liveMap.removeLayer(tracks[address].posChanges)
     }
   }
 
@@ -262,6 +303,8 @@ if (document.getElementById('live-map')) {
     const aircraft = track_hash[address]
     if (aircraft) {
       aircraft.track.removeFrom(map)
+      aircraft.posChanges.clearLayers()
+      aircraft.posChanges.removeFrom(map)
       track_group.removeLayer(aircraft.track)
       aircraft.marker.removeFrom(map)
     }
