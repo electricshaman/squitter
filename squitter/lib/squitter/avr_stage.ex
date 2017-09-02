@@ -16,7 +16,12 @@ defmodule Squitter.AvrTcpStage do
     send(self(), :connect)
 
     hash_function = fn({_t,f} = m) ->
-      {:ok, address} = Squitter.Decoding.ModeS.icao_address(f)
+      address = case Squitter.Decoding.ModeS.icao_address(f) do
+        {:ok, address} -> address
+        :error ->
+          Logger.warn("Failed to parse address needed for assigning partition: #{inspect f}")
+          ""
+      end
       partition = :erlang.phash2(address, length(partitions))
       {m, partition}
     end
