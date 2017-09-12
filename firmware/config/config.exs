@@ -43,7 +43,6 @@ config :squitter_web, Squitter.Web.Endpoint,
 config :squitter, :decoding,
   avr_host: "localhost",
   avr_port: 30002,
-  dump1090_path: "dump1090"
   dump1090_path: "dump1090",
   gain: 45
 
