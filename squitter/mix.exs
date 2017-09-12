@@ -24,6 +24,7 @@ defmodule Squitter.Mixfile do
   defp deps do
     [{:gen_stage, "~> 0.11"},
      {:flow, "~> 0.11"},
+     {:poison, "~> 3.1"},
      {:elixir_make, "~> 0.4", runtime: false}]
   end
 end

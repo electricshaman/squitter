@@ -5,27 +5,18 @@ defmodule Squitter.Service.Dump1090 do
   @device_busy Regex.compile!("Device or resource busy", "i")
   @no_device   Regex.compile!("No supported RTLSDR devices found", "i")
 
-  def start_link(path \\ "dump1090", opts \\ []) do
-    GenServer.start_link(__MODULE__, [path, opts], name: __MODULE__)
+  def start_link(path \\ "dump1090", args \\ []) do
+    GenServer.start_link(__MODULE__, [path, args], name: __MODULE__)
   end
 
-  def start do
-    GenServer.call(__MODULE__, :start)
-  end
-
-  def stop do
-    GenServer.call(__MODULE__, :stop)
-  end
-
-  def init([path, opts]) do
+  def init([path, args]) do
     case System.find_executable(path) do
       nil ->
         Logger.error("Can't find dump1090!")
         {:stop, :exec_not_found}
-      found ->
-        gain = opts[:gain] || 45
-        port = start_port(found, gain)
-        {:ok, %{port: port, path: found, gain: gain}}
+      found_path ->
+        port = start_port(found_path, args)
+        {:ok, %{port: port, path: found_path}}
     end
   end
 
@@ -44,20 +35,9 @@ defmodule Squitter.Service.Dump1090 do
     end
   end
 
-  def handle_call(:start, _from, %{path: path, gain: gain, port: nil} = state) do
-    port = start_port(path, gain)
-    {:reply, :ok, %{state | port: port}}
-  end
-
-  def handle_call(:stop, _from, %{port: port} = state) do
-    result = Port.close(port)
-    Logger.debug("Port closed: #{inspect result}")
-    {:reply, result, %{state | port: nil}}
-  end
-
   # Private helpers
 
-  defp start_port(path, gain) do
-    Port.open({:spawn, "#{path} --net --fix --gain #{gain} --quiet"}, [:stderr_to_stdout, :binary])
+  defp start_port(path, args) do
+    Port.open({:spawn_executable, path}, [{:args, args}, :stderr_to_stdout, :binary])
   end
 end

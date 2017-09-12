@@ -182,6 +182,26 @@ defmodule Squitter.Aircraft do
     {:ok, state}
   end
 
+  # Msg handlers when data's coming from ADSBExchange (demo)
+  defp handle_msg(%{"Call" => callsign}, state) do
+    {:ok, %{state | callsign: callsign}}
+  end
+  defp handle_msg(%{"Lat" => lat, "Long" => lon, "Alt" => alt, "Spd" => spd, "Trak" => trak}, state) do
+    latlon = [lat, lon]
+    position = latlon ++ [alt]
+
+    pos_history = [position|state.position_history]
+
+    {:ok, site_location} = Site.location()
+    distance = calculate_gcd(latlon, site_location)
+
+    {:ok, %{state | altitude: alt, velocity_kt: spd, distance: distance, latlon: latlon, position_history: pos_history, heading: trak}}
+  end
+  defp handle_msg(%{"Icao" => _address} = other, state) do
+    # Ignore
+    {:ok, state}
+  end
+
   defp handle_msg(other, state) do
     Logger.warn "Unhandled msg in #{state.address}: #{inspect other}"
     {:ok, state}

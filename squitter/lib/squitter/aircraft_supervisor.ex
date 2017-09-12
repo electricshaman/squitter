@@ -22,6 +22,10 @@ defmodule Squitter.AircraftSupervisor do
     dispatch(address, msg)
   end
 
+  def dispatch(%{"Icao" => address} = msg) do
+    dispatch(address, msg)
+  end
+
   def dispatch(_other) do
     # Nothing available in the message to locate the aircraft, drop the message.
     {:error, :unroutable}

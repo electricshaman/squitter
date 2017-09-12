@@ -18,7 +18,8 @@ defmodule Squitter.Application do
       worker(Squitter.MasterLookup, []),
       worker(Squitter.StatsTracker, [10000]),
       supervisor(Squitter.AircraftSupervisor, []),
-      supervisor(Squitter.DecodingSupervisor, [])
+      #worker(Squitter.DemoServer, ["pub-vrs.adsbexchange.com", 32001])
+      supervisor(Squitter.DecodingSupervisor, [false])
     ] |> List.flatten
 
     opts = [strategy: :one_for_one, name: Squitter.Supervisor]
