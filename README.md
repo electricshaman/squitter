@@ -1,6 +1,8 @@
 # Squitter
+
 WIP
-## Barebones Instructions for Raspberry Pi 3 (as of 8/31/2017)
+
+## Instructions for Raspberry Pi 3 (as of 9/11/2017)
 
 These steps are a bit convoluted at the moment but I plan to add scripts to automate it soon (PRs welcome).
 
@@ -20,9 +22,9 @@ Assuming Nerves and Phoenix (and npm and brunch) are installed:
 12. `mix deps.get`
 13. `mix firmware && mix firmware.burn`
 
-## Barebones Instructions for host mode with RTL-SDR on localhost
+## Instructions for host mode with RTL-SDR and dump1090 on localhost
 
-Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still needed even if you are running it locally.
+Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still needed even if you are running squitter locally.
 
 1. `git clone https://github.com/electricshaman/squitter.git` (takes a little bit)
 2. `cd squitter/web`
@@ -36,9 +38,9 @@ Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still
 10. `mix deps.get`
 11. `iex -S mix`
 
-## Barebones Instructions for host mode with dump1090 exposed on a remote host
+## Instructions for host mode with dump1090 exposed on a remote host
 
-Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still needed even if you are running it locally.
+Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still needed even if you are running squitter locally.
 
 1. `git clone https://github.com/electricshaman/squitter.git` (takes a little bit)
 2. `cd squitter/web`
