@@ -40,7 +40,6 @@ defmodule Squitter.DemoServer do
       {:ok, doc} ->
         Enum.each(doc["acList"], fn m -> Squitter.AircraftSupervisor.dispatch(m) end)
       {:error, reason} ->
-        File.write("/home/jeff/test.json", document, [:write])
         Logger.error("Failed to parse JSON doc from ADSBExchange: #{inspect reason}")
     end
   end
