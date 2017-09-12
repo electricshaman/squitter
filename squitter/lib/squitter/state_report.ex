@@ -76,7 +76,7 @@ defmodule Squitter.StateReport do
   end
 
   defp cleanup(table, address, ref) do
-    Process.demonitor(ref)
+    Process.demonitor(ref, [:flush])
     :ets.delete(table, address)
   end
 end
