@@ -209,7 +209,7 @@ defmodule Squitter.Aircraft do
 
   defp build_view(state) do
     state
-    |> Map.take([:callsign, :registration, :squawk, :msgs, :category, :altitude, :velocity_kt,
+    |> Map.take([:callsign, :squawk, :msgs, :category, :altitude, :velocity_kt,
       :heading, :vr, :address, :age, :distance, :country])
     |> Map.put(:position_history, Enum.reverse(state.position_history)) # Reverse so most recent is at the end
     |> Map.put(:latlon, state.latlon)
