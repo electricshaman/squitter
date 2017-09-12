@@ -38,32 +38,11 @@ defmodule Squitter.AircraftSupervisor do
     cast(key, {:dispatch, msg})
   end
 
-  def call_all_aircraft(request) do
-    aircraft_pids()
-    |> Enum.map(fn pid -> GenServer.call(pid, request) end)
-  end
-
-  def cast_all_aircraft(request) do
-    aircraft_pids()
-    |> Enum.each(fn pid -> GenServer.cast(pid, request) end)
-    :ok
-  end
-
-  def aircraft_pids do
-    Supervisor.which_children(__MODULE__)
-    |> Enum.map(fn({_, pid, _, _}) -> pid end)
-  end
-
   # Private
 
   defp cast(key, msg) do
     get_aircraft(key)
     |> GenServer.cast(msg)
-  end
-
-  defp call(key, msg) do
-    get_aircraft(key)
-    |> GenServer.call(msg)
   end
 
   defp get_aircraft(key) do
