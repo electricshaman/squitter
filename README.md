@@ -1,6 +1,6 @@
 # Squitter
 
-WIP
+Warning: This project is under active development and could break at any time!
 
 ## Instructions for Raspberry Pi 3 (as of 9/11/2017)
 
@@ -35,8 +35,9 @@ Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still
 7. `cd ../../firmware`
 8. Edit site location in `config/config.exs` for your site location's GPS coordinates.  Also change this in `squitter/web/lib/squitter_web/views/aircraft_view.ex` (temporarily hard coded).
 9. If dump1090 is not available on your PATH, change the dump1090_path config to point to it.
-10. `mix deps.get`
-11. `iex -S mix`
+10. `export MIX_TARGET=host` # Only needed if you previously set MIX_TARGET to rpi3
+11. `mix deps.get`
+12. `iex -S mix`
 
 ## Instructions for host mode with dump1090 exposed on a remote host
 
@@ -51,5 +52,6 @@ Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still
 7. `cd ../../firmware`
 8. Edit site location in `config/config.exs` for your site location's GPS coordinates.  Also change this in `squitter/web/lib/squitter_web/views/aircraft_view.ex` (temporarily hard coded).
 9. Point `avr_host` to the host which has dump1090 running (it should be running on the remote host with the `--net` option so that it exposes raw frames over port 30002).
-10. `mix deps.get`
-11. `iex -S mix`
+10. `export MIX_TARGET=host` # Only needed if you previously set MIX_TARGET to rpi3
+11. `mix deps.get`
+12. `iex -S mix`
