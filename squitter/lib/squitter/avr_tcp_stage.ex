@@ -15,17 +15,11 @@ defmodule Squitter.AvrTcpStage do
   def init([host, port, partitions]) do
     send(self(), :connect)
 
-    hash_function = fn({_t,f} = m) ->
-      address =
-        case Squitter.Decoding.ModeS.icao_address(f) do
-          {:ok, address} -> address
-          :error ->
-            Logger.warn("Failed to parse address needed for assigning partition: #{inspect f}")
-            ""
-        end
-      partition = :erlang.phash2(address, length(partitions))
-      {m, partition}
-    end
+    hash_function =
+      fn({_index, frame} = envelope) ->
+        partition = assign_partition(frame, partitions)
+        {envelope, partition}
+      end
 
     {:producer, %{
       host: host,
@@ -77,6 +71,23 @@ defmodule Squitter.AvrTcpStage do
 
   def handle_demand(_demand, state) do
     {:noreply, [], state}
+  end
+
+  # Private
+
+  defp assign_partition(frame, partitions) do
+    frame
+    |> get_partition_key
+    |> :erlang.phash2(length(partitions))
+  end
+
+  defp get_partition_key(frame) do
+    case Squitter.Decoding.ModeS.icao_address(frame) do
+      {:ok, address} -> address
+      :error ->
+        Logger.warn("Failed to parse address for partition key: #{inspect frame}")
+        ""
+    end
   end
 
   # Occasionally dump1090 sends frames consisting of only 2 null bytes for unknown reasons.
