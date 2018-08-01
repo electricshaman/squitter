@@ -25,13 +25,13 @@ defmodule Squitter.Web.ChannelCase do
     end
   end
 
-
   setup tags do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Squitter.Web.Repo)
+
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Squitter.Web.Repo, {:shared, self()})
     end
+
     :ok
   end
-
 end

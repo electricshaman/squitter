@@ -5,7 +5,7 @@ defmodule Squitter.Web.Application do
   def start(_type, _args) do
     import Supervisor.Spec
 
-    Logger.debug "Squitter web starting up"
+    Logger.debug("Squitter web starting up")
 
     children = [
       supervisor(Squitter.Web.Endpoint, [])

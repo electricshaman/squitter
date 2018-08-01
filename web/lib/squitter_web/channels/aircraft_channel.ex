@@ -25,10 +25,10 @@ defmodule Squitter.Web.AircraftChannel do
 
   defp state_reports(position_history \\ false) do
     :ets.tab2list(:state_report)
-    |> Enum.map(fn({_key, state}) -> state end)
-    |> Enum.map(fn(r) ->
-         if position_history, do: r, else: Map.delete(r, :position_history)
-       end)
+    |> Enum.map(fn {_key, state} -> state end)
+    |> Enum.map(fn r ->
+      if position_history, do: r, else: Map.delete(r, :position_history)
+    end)
   end
 
   defp schedule_report_push do
