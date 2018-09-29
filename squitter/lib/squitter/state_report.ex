@@ -25,13 +25,13 @@ defmodule Squitter.StateReport do
     # TODO: Implement Bimap data structure (like from boost) for tracking aircraft processes
     # bidirectionally from address -> ref and ref -> address.
 
-    {:ok, {table, {Map.new, Map.new}}}
+    {:ok, {table, {Map.new(), Map.new()}}}
   end
 
   def handle_call(:state_report, _from, {table, aircraft}) do
     report =
       :ets.tab2list(table)
-      |> Enum.map(fn({_key, state}) -> state end)
+      |> Enum.map(fn {_key, state} -> state end)
 
     {:reply, %{aircraft: report}, {table, aircraft}}
   end
@@ -51,13 +51,16 @@ defmodule Squitter.StateReport do
     # Lookup aircraft from the left (address -> ref)
     new_aircraft =
       case Map.pop(left, address) do
-        {nil, ^left} -> left
+        {nil, ^left} ->
+          left
+
         {ref, new_left} when is_reference(ref) ->
           Logger.debug("Cleaning up for #{address}")
           true = cleanup(table, address, ref)
           new_right = Map.delete(right, ref)
           {new_left, new_right}
       end
+
     {:noreply, {table, new_aircraft}}
   end
 
@@ -65,13 +68,16 @@ defmodule Squitter.StateReport do
     # Lookup aircraft from the right (ref -> address)
     new_aircraft =
       case Map.pop(right, ref) do
-        {nil, ^right} -> right
+        {nil, ^right} ->
+          right
+
         {address, new_right} when is_binary(address) ->
           Logger.debug("Cleaning up for #{address}")
           true = cleanup(table, address, ref)
           new_left = Map.delete(left, address)
           {new_left, new_right}
       end
+
     {:noreply, {table, new_aircraft}}
   end
 

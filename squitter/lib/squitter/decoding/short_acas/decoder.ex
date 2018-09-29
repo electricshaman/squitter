@@ -4,11 +4,23 @@ defmodule Squitter.Decoding.ShortAcas do
 
   @df 0
 
-  defstruct [:df, :icao, :msg, :parity, :airborne, :cross_link_capability,
-             :sensitivity_level, :reply_information, :altitude_code, :time,
-             :crc, :pi, :checksum]
+  defstruct [
+    :df,
+    :icao,
+    :msg,
+    :parity,
+    :airborne,
+    :cross_link_capability,
+    :sensitivity_level,
+    :reply_information,
+    :altitude_code,
+    :time,
+    :crc,
+    :pi,
+    :checksum
+  ]
 
-  def decode(time, <<@df :: 5, _payload :: 27-bits, pi :: 24-unsigned>> = msg) do
+  def decode(time, <<@df::5, _payload::27-bits, pi::24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 56)
     {:ok, icao} = ModeS.icao_address(msg, checksum)
     parity = ModeS.parity(pi, icao)
@@ -22,8 +34,9 @@ defmodule Squitter.Decoding.ShortAcas do
       parity: parity,
       pi: pi,
       checksum: checksum,
-      crc: (if checksum == parity, do: :valid, else: :invalid),
-      time: time}
+      crc: if(checksum == parity, do: :valid, else: :invalid),
+      time: time
+    }
   end
 
   def decode(_time, other) do

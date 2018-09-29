@@ -4,30 +4,25 @@ defmodule Squitter.AvrTcpStage do
   alias Squitter.{AVR, StatsTracker}
   import Squitter.Decoding.Utils, only: [hex_to_bin: 1]
 
-  @max_conn_attempts      10
-  @valid_frame_size_bits  [56, 112]
+  @max_conn_attempts 10
+  @valid_frame_size_bits [56, 112]
 
   def start_link(host, port, partitions) do
-    Logger.debug "Starting up #{__MODULE__}"
+    Logger.debug("Starting up #{__MODULE__}")
     GenStage.start_link(__MODULE__, [host, port, partitions], name: AvrTcpStage)
   end
 
   def init([host, port, partitions]) do
     send(self(), :connect)
 
-    hash_function =
-      fn({_index, frame} = envelope) ->
-        partition = assign_partition(frame, partitions)
-        {envelope, partition}
-      end
+    hash_function = fn {_index, frame} = envelope ->
+      partition = assign_partition(frame, partitions)
+      {envelope, partition}
+    end
 
-    {:producer, %{
-      host: host,
-      port: port,
-      socket: nil,
-      attempts: @max_conn_attempts - 1,
-      buffer: []},
-      dispatcher: {GenStage.PartitionDispatcher, hash: hash_function, partitions: partitions}}
+    {:producer,
+     %{host: host, port: port, socket: nil, attempts: @max_conn_attempts - 1, buffer: []},
+     dispatcher: {GenStage.PartitionDispatcher, hash: hash_function, partitions: partitions}}
   end
 
   def handle_info({:tcp, _socket, data}, %{buffer: buffer} = state) do
@@ -62,8 +57,12 @@ defmodule Squitter.AvrTcpStage do
     case :gen_tcp.connect(to_charlist(host), port, [{:active, true}]) do
       {:ok, socket} ->
         {:noreply, [], %{state | socket: socket}}
+
       {:error, reason} ->
-        Logger.warn("Failed to connect to AVR source at #{host}:#{port}: #{inspect reason} (#{attempts} attempts remaining)")
+        Logger.warn(
+          "Failed to connect to AVR source at #{host}:#{port}: #{inspect(reason)} (#{attempts} attempts remaining)"
+        )
+
         Process.send_after(self(), :connect, 1000)
         {:noreply, [], %{state | attempts: attempts - 1}}
     end
@@ -83,9 +82,11 @@ defmodule Squitter.AvrTcpStage do
 
   defp get_partition_key(frame) do
     case Squitter.Decoding.ModeS.icao_address(frame) do
-      {:ok, address} -> address
+      {:ok, address} ->
+        address
+
       :error ->
-        Logger.warn("Failed to parse address for partition key: #{inspect frame}")
+        Logger.warn("Failed to parse address for partition key: #{inspect(frame)}")
         ""
     end
   end
@@ -93,8 +94,9 @@ defmodule Squitter.AvrTcpStage do
   # Occasionally dump1090 sends frames consisting of only 2 null bytes for unknown reasons.
   # Filter these out up front so that our hashing function on ICAO address never fails.
   defp is_valid_frame(frame)
-    when bit_size(frame) in @valid_frame_size_bits, do: true
+       when bit_size(frame) in @valid_frame_size_bits,
+       do: true
+
   defp is_valid_frame(_frame),
     do: false
-
 end

@@ -9,16 +9,17 @@ defmodule Squitter.DecoderStage do
   end
 
   def init([partition]) do
-    Logger.debug "Starting up #{__MODULE__} to pull from partition #{partition}"
+    Logger.debug("Starting up #{__MODULE__} to pull from partition #{partition}")
     {:consumer, %{}, subscribe_to: [{AvrTcpStage, partition: partition}]}
   end
 
   def handle_events(events, _from, state) do
     time = System.monotonic_time(:milliseconds)
 
-    counts = Enum.map(events, fn {time, frame} -> Squitter.Decoding.decode(time, frame) end)
-             |> Enum.map(&AircraftSupervisor.dispatch/1)
-             |> Enum.reduce(%{}, &reduce_totals/2)
+    counts =
+      Enum.map(events, fn {time, frame} -> Squitter.Decoding.decode(time, frame) end)
+      |> Enum.map(&AircraftSupervisor.dispatch/1)
+      |> Enum.reduce(%{}, &reduce_totals/2)
 
     Squitter.StatsTracker.dispatched({time, counts})
 
@@ -32,6 +33,7 @@ defmodule Squitter.DecoderStage do
       case result do
         :ok ->
           Map.get(totals, :dispatched, 0) + 1
+
         {:error, _} ->
           Map.get(totals, :dispatched, 0)
       end

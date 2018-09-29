@@ -6,7 +6,7 @@ defmodule Squitter.Decoding.IdentityReply do
 
   defstruct [:df, :icao, :parity, :pi, :icao, :checksum, :crc, :msg, :time]
 
-  def decode(time, <<@df :: 5, _payload :: 27-bits, pi :: 24-unsigned>> = msg) do
+  def decode(time, <<@df::5, _payload::27-bits, pi::24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 56)
     {:ok, icao} = ModeS.icao_address(msg, checksum)
     parity = ModeS.parity(pi, icao)
@@ -20,8 +20,9 @@ defmodule Squitter.Decoding.IdentityReply do
       parity: parity,
       pi: pi,
       checksum: checksum,
-      crc: (if checksum == parity, do: :valid, else: :invalid),
-      time: time}
+      crc: if(checksum == parity, do: :valid, else: :invalid),
+      time: time
+    }
   end
 
   def decode(_time, other) do

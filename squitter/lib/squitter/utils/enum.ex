@@ -37,7 +37,7 @@ defmodule Squitter.Enum do
       end
 
       def decode(value) do
-        case Enum.find(@list, fn({_k, v}) -> v == value end) do
+        case Enum.find(@list, fn {_k, v} -> v == value end) do
           {k, _v} -> {:ok, k}
           _ -> {:error, :no_key}
         end

@@ -17,7 +17,7 @@ defmodule Squitter.Decoding.Utils do
     Enum.map(data, fn x ->
       to_hex_string(x)
     end)
-    |> Enum.join
+    |> Enum.join()
   end
 
   def to_hex_string(_), do: :error
@@ -29,7 +29,8 @@ defmodule Squitter.Decoding.Utils do
     do: hex_to_bin(to_string(msg))
 
   def hex_to_bin(msg) when is_binary(msg) do
-    for <<b :: 2-bytes <- msg>>, into: <<>>,
+    for <<b::2-bytes <- msg>>,
+      into: <<>>,
       do: <<String.to_integer(b, 16)>>
   end
 
@@ -38,8 +39,10 @@ defmodule Squitter.Decoding.Utils do
       is_list(msg) ->
         to_string(msg)
         |> hex_to_bin
+
       Regex.match?(~r/^[A-F0-9]+$/i, msg) ->
         hex_to_bin(msg)
+
       true ->
         msg
     end

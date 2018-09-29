@@ -9,20 +9,14 @@ defmodule Squitter.StatsTracker do
   end
 
   def init([clock]) do
-    Logger.debug "Starting up #{__MODULE__}"
+    Logger.debug("Starting up #{__MODULE__}")
 
     counts = :array.new(@rate_buffer_size, default: 0)
     times = :array.new(@rate_buffer_size, default: System.monotonic_time(:milliseconds))
 
     schedule_tick(clock)
 
-    {:ok, %{
-      rate: 0.0,
-      clock: clock,
-      position: 0,
-      totals: %{},
-      counts: counts,
-      times: times}}
+    {:ok, %{rate: 0.0, clock: clock, position: 0, totals: %{}, counts: counts, times: times}}
   end
 
   def handle_cast({:dispatched, counts}, state) do
@@ -34,7 +28,8 @@ defmodule Squitter.StatsTracker do
     times = :array.set(state.position, time, state.times)
     next_position = if state.position + 1 >= @rate_buffer_size, do: 0, else: state.position + 1
 
-    {:noreply, %{state | totals: new_totals, counts: counts, times: times, position: next_position}}
+    {:noreply,
+     %{state | totals: new_totals, counts: counts, times: times, position: next_position}}
   end
 
   def handle_cast({:count, {type, count}}, state) do
@@ -42,6 +37,7 @@ defmodule Squitter.StatsTracker do
       Map.update(state.totals, type, count, fn current ->
         count + current
       end)
+
     {:noreply, %{state | totals: new_totals}}
   end
 
@@ -67,16 +63,18 @@ defmodule Squitter.StatsTracker do
   end
 
   defp calculate_totals(totals, acc) do
-    Map.merge(totals, acc, fn(_k, ct, ca) -> ct + ca end)
+    Map.merge(totals, acc, fn _k, ct, ca -> ct + ca end)
   end
 
   defp format_stats({rate, totals}) do
-    ["rate=#{rate}/sec"|
-     Enum.map(totals, fn {k, v} ->
-       key = format_total_key(k)
-       "#{key}=#{v}"
-     end)]
-     |> Enum.join("\n")
+    [
+      "rate=#{rate}/sec"
+      | Enum.map(totals, fn {k, v} ->
+          key = format_total_key(k)
+          "#{key}=#{v}"
+        end)
+    ]
+    |> Enum.join("\n")
   end
 
   defp format_total_key(key) when is_tuple(key) do

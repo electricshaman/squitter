@@ -6,7 +6,7 @@ defmodule Squitter.Decoding.AltitudeReply do
 
   defstruct [:df, :icao, :time, :pi, :parity, :checksum, :msg, :crc]
 
-  def decode(time, <<@df :: 5, _payload :: 27-bits, pi :: 24-unsigned>> = msg) do
+  def decode(time, <<@df::5, _payload::27-bits, pi::24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 56)
     {:ok, icao} = ModeS.icao_address(msg, checksum)
     parity = ModeS.parity(pi, icao)
@@ -21,7 +21,8 @@ defmodule Squitter.Decoding.AltitudeReply do
       parity: parity,
       time: time,
       checksum: checksum,
-      crc: (if checksum == parity, do: :valid, else: :invalid)}
+      crc: if(checksum == parity, do: :valid, else: :invalid)
+    }
   end
 
   def decode(_time, other) do
