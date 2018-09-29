@@ -5,7 +5,7 @@ defmodule Squitter.Decoding.MilExtSquitter do
 
   defstruct [:df, :msg, :pi, :parity, :checksum, :crc, :icao, :time]
 
-  def decode(time, <<df :: 5, _payload :: 27-bits, pi :: 24-unsigned>> = msg) when df in @df do
+  def decode(time, <<df::5, _payload::27-bits, pi::24-unsigned>> = msg) when df in @df do
     # TODO: Confirm if this DF is actually 56 or 112 bits
     checksum = ModeS.checksum(msg, 56)
     {:ok, icao} = ModeS.icao_address(msg, checksum)
@@ -19,12 +19,13 @@ defmodule Squitter.Decoding.MilExtSquitter do
       pi: pi,
       parity: parity,
       checksum: checksum,
-      crc: (if checksum == parity, do: :valid, else: :invalid),
+      crc: if(checksum == parity, do: :valid, else: :invalid),
       time: time,
-      msg: msg}
+      msg: msg
+    }
   end
 
-  def decode(_time, <<df :: 5, _ :: bits>>) when df in @df do
+  def decode(_time, <<df::5, _::bits>>) when df in @df do
     StatsTracker.count({:df, df, :decode_failed})
     {:error, :bad_format}
   end

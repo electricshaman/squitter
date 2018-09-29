@@ -9,25 +9,25 @@ defmodule Squitter.AVR do
 
   # 42 is *
   # Is * the meaning of life?
-  def split_frames([42|tail], [], frames) do
+  def split_frames([42 | tail], [], frames) do
     split_frames(tail, [], frames)
   end
 
-  def split_frames([42|tail], current, frames) do
-    split_frames(tail, [], [to_frame(current)|frames])
+  def split_frames([42 | tail], current, frames) do
+    split_frames(tail, [], [to_frame(current) | frames])
   end
 
   # 59 is ;
-  def split_frames([59|tail], current, frames) do
-    split_frames(tail, [], [to_frame(current)|frames])
+  def split_frames([59 | tail], current, frames) do
+    split_frames(tail, [], [to_frame(current) | frames])
   end
 
-  def split_frames([nibble|tail], current, frames) do
-    split_frames(tail, [nibble|current], frames)
+  def split_frames([nibble | tail], current, frames) do
+    split_frames(tail, [nibble | current], frames)
   end
 
   def split_frames([], current, frames),
-    do: {Enum.reverse(frames), [42|Enum.reverse(current)]}
+    do: {Enum.reverse(frames), [42 | Enum.reverse(current)]}
 
   defp to_frame(list) do
     Enum.reverse(list) |> to_string

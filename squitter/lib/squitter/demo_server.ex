@@ -18,29 +18,33 @@ defmodule Squitter.DemoServer do
         Regex.match?(~r/\]\}$/, data) ->
           # End of document, process it and reset the buffer.
 
-          [data|buffer]
-          |> Enum.reverse
-          |> Enum.join
+          [data | buffer]
+          |> Enum.reverse()
+          |> Enum.join()
           |> process()
 
           []
+
         Regex.match?(~r/^\{"acList":\[/, data) ->
           # New JSON document, start a new buffer.
           [data]
+
         true ->
           # In between
-          [data|buffer]
+          [data | buffer]
       end
-      :inet.setopts(socket, [{:active, :once}])
-      {:noreply, {socket, buffer}}
+
+    :inet.setopts(socket, [{:active, :once}])
+    {:noreply, {socket, buffer}}
   end
 
   defp process(document) do
     case Poison.Parser.parse(document) do
       {:ok, doc} ->
         Enum.each(doc["acList"], fn m -> Squitter.AircraftSupervisor.dispatch(m) end)
+
       {:error, reason} ->
-        Logger.error("Failed to parse JSON doc from ADSBExchange: #{inspect reason}")
+        Logger.error("Failed to parse JSON doc from ADSBExchange: #{inspect(reason)}")
     end
   end
 end

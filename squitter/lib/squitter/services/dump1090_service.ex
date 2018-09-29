@@ -3,7 +3,7 @@ defmodule Squitter.Service.Dump1090 do
   require Logger
 
   @device_busy Regex.compile!("Device or resource busy", "i")
-  @no_device   Regex.compile!("No supported RTLSDR devices found", "i")
+  @no_device Regex.compile!("No supported RTLSDR devices found", "i")
 
   def start_link(path \\ "dump1090", args \\ []) do
     GenServer.start_link(__MODULE__, [path, args], name: __MODULE__)
@@ -14,6 +14,7 @@ defmodule Squitter.Service.Dump1090 do
       nil ->
         Logger.error("Can't find dump1090!")
         {:stop, :exec_not_found}
+
       found_path ->
         port = start_port(found_path, args)
         {:ok, %{port: port, path: found_path}}
@@ -28,8 +29,10 @@ defmodule Squitter.Service.Dump1090 do
         :os.cmd('killall -2 dump1090')
         {:ok, _} = :timer.apply_after(3000, __MODULE__, :start, [])
         {:noreply, %{state | port: nil}}
+
       Regex.match?(@no_device, msg) ->
         {:stop, {:shutdown, :device_not_found}, state}
+
       true ->
         {:noreply, state}
     end

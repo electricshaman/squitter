@@ -48,9 +48,11 @@ defmodule Squitter.AircraftSupervisor do
   defp get_aircraft(key) do
     case Supervisor.start_child(__MODULE__, [key]) do
       {:ok, pid} ->
-        Logger.debug "Aircraft #{key} created"
+        Logger.debug("Aircraft #{key} created")
         pid
-      {:error, {:already_started, pid}} -> pid
+
+      {:error, {:already_started, pid}} ->
+        pid
     end
   end
 end

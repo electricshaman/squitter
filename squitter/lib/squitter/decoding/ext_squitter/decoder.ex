@@ -3,6 +3,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   import Squitter.Decoding.Utils
   alias Squitter.StatsTracker
   alias Squitter.Decoding.ModeS
+
   alias Squitter.Decoding.ExtSquitter.{
     TypeCode,
     Callsign,
@@ -12,16 +13,17 @@ defmodule Squitter.Decoding.ExtSquitter do
     AirSpeed
   }
 
-  @df   [17, 18]
+  @df [17, 18]
   @head 37
 
   defstruct [:df, :tc, :ca, :icao, :msg, :pi, :crc, :type_msg, :time]
 
-  def decode(time, <<df :: 5, ca :: 3, _icao :: 3-bytes, data :: 7-bytes, pi :: 24-unsigned>> = msg) when byte_size(msg) == 14 and df in @df do
+  def decode(time, <<df::5, ca::3, _icao::3-bytes, data::7-bytes, pi::24-unsigned>> = msg)
+      when byte_size(msg) == 14 and df in @df do
     checksum = ModeS.checksum(msg, 112)
     {:ok, icao_address} = ModeS.icao_address(msg, checksum)
 
-    <<tc :: 5, _rest :: bits>> = data
+    <<tc::5, _rest::bits>> = data
     type = TypeCode.decode(tc)
 
     StatsTracker.count({:df, df, :decoded})
@@ -35,75 +37,47 @@ defmodule Squitter.Decoding.ExtSquitter do
       icao: icao_address,
       msg: msg,
       pi: pi,
-      crc: (if checksum == pi, do: :valid, else: :invalid)}
+      crc: if(checksum == pi, do: :valid, else: :invalid)
+    }
   end
 
-  def decode(time, <<df :: 5, _ :: bits>> = msg) when df in @df do
+  def decode(time, <<df::5, _::bits>> = msg) when df in @df do
     StatsTracker.count({:df, df, :decode_failed})
 
-    Logger.warn "Unrecognized ADS-B message (df #{inspect df}: #{inspect msg}"
-    %__MODULE__{
-      df: df,
-      time: time,
-      msg: msg}
+    Logger.warn("Unrecognized ADS-B message (df #{inspect(df)}: #{inspect(msg)}")
+    %__MODULE__{df: df, time: time, msg: msg}
   end
 
   @doc """
   Decode the aircraft identification message.
   """
-  def decode_type({:aircraft_id, tc}, <<_ :: @head, cat :: 3, cs :: 6-bytes, _ :: binary>>) do
-    callsign = (for <<c :: 6 <- cs>>, into: <<>>, do: Callsign.character(c)) |> String.trim
+  def decode_type({:aircraft_id, tc}, <<_::@head, cat::3, cs::6-bytes, _::binary>>) do
+    callsign = for(<<c::6 <- cs>>, into: <<>>, do: Callsign.character(c)) |> String.trim()
 
-    %{aircraft_cat: AircraftCategory.decode(tc, cat),
-      callsign: callsign}
+    %{aircraft_cat: AircraftCategory.decode(tc, cat), callsign: callsign}
   end
 
   @doc """
   Decode the airborne position message.
   """
-  def decode_type({alt_type, tc}, msg) when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] do
-    <<_       :: @head,
-      ss      :: 2,
-      nicsb   :: 1,
-      alt_bin :: 12-bits,
-      t       :: 1,
-      f       :: 1,
-      lat_cpr :: 17,
-      lon_cpr :: 17,
-      _       :: binary>> = msg
+  def decode_type({alt_type, tc}, msg)
+      when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] do
+    <<_::@head, ss::2, nicsb::1, alt_bin::12-bits, t::1, f::1, lat_cpr::17, lon_cpr::17,
+      _::binary>> = msg
 
-    <<alt_a :: 7, alt_q :: 1, alt_b :: 4>> = alt_bin
+    <<alt_a::7, alt_q::1, alt_b::4>> = alt_bin
 
     alt =
       if alt_q == 1 do
-        <<n :: 11>> = <<alt_a :: 7, alt_b :: 4>>
+        <<n::11>> = <<alt_a::7, alt_b::4>>
         n * 25 - 1000
       else
         # TODO: Clean this up somehow
-        <<c1 :: 1,
-          a1 :: 1,
-          c2 :: 1,
-          a2 :: 1,
-          c4 :: 1,
-          a4 :: 1,
-          b1 :: 1,
-          _  :: 1,
-          b2 :: 1,
-          d2 :: 1,
-          b4 :: 1,
-          d4 :: 1>> = alt_bin
+        <<c1::1, a1::1, c2::1, a2::1, c4::1, a4::1, b1::1, _::1, b2::1, d2::1, b4::1, d4::1>> =
+          alt_bin
 
-        <<n :: 11>> = <<d2 :: 1,
-                        d4 :: 1,
-                        a1 :: 1,
-                        a2 :: 1,
-                        a4 :: 1,
-                        b1 :: 1,
-                        b2 :: 1,
-                        b4 :: 1,
-                        c1 :: 1,
-                        c2 :: 1,
-                        c4 :: 1>>
+        <<n::11>> =
+          <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>>
 
         ModeS.gillham_altitude(n)
       end
@@ -117,7 +91,8 @@ defmodule Squitter.Decoding.ExtSquitter do
       utc_time: to_bool(t),
       flag: f,
       lat_cpr: lat_cpr,
-      lon_cpr: lon_cpr}
+      lon_cpr: lon_cpr
+    }
     |> assign_nic
   end
 
@@ -144,21 +119,9 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: http://adsb-decode-guide.readthedocs.io/en/latest/content/airborne-velocity.html
   """
-  def decode_type(:air_velocity, <<_ :: 37, sub :: 3, body :: binary>>) when sub in [1, 2] do
-    <<ic      :: 1,
-      _resv_a :: 1,
-      nac     :: 3,
-      s_ew    :: 1,
-      v_ew    :: 10,
-      s_ns    :: 1,
-      v_ns    :: 10,
-      vrsrc   :: 1,
-      s_vr    :: 1,
-      vr      :: 9,
-      _resv_b :: 2,
-      s_dif   :: 1,
-      dif     :: 7,
-      _       :: binary>> = body
+  def decode_type(:air_velocity, <<_::37, sub::3, body::binary>>) when sub in [1, 2] do
+    <<ic::1, _resv_a::1, nac::3, s_ew::1, v_ew::10, s_ns::1, v_ns::10, vrsrc::1, s_vr::1, vr::9,
+      _resv_b::2, s_dif::1, dif::7, _::binary>> = body
 
     {velocity, heading} = calculate_vector(s_ew, s_ns, v_ew, v_ns, sub)
 
@@ -170,7 +133,8 @@ defmodule Squitter.Decoding.ExtSquitter do
       vert_rate_src: vert_rate_source(vrsrc),
       vert_rate: vert_rate(vr, s_vr),
       geo_delta: geo_delta(dif, s_dif),
-      supersonic: sub == 2}
+      supersonic: sub == 2
+    }
   end
 
   @doc """
@@ -196,42 +160,32 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: http://adsb-decode-guide.readthedocs.io/en/latest/content/airborne-velocity.html
   """
-  def decode_type(:air_velocity, <<_ :: 37, sub :: 3, body :: binary>>) when sub in [3, 4] do
-    <<ic      :: 1,
-      _resv_a :: 1,
-      nac     :: 3,
-      s_hdg   :: 1,
-      hdg     :: 10,
-      as_t    :: 1,
-      as      :: 10,
-      vrsrc   :: 1,
-      s_vr    :: 1,
-      vr      :: 9,
-      _resv_b :: 2,
-      s_dif   :: 1,
-      dif     :: 7,
-      _       :: binary>> = body
+  def decode_type(:air_velocity, <<_::37, sub::3, body::binary>>) when sub in [3, 4] do
+    <<ic::1, _resv_a::1, nac::3, s_hdg::1, hdg::10, as_t::1, as::10, vrsrc::1, s_vr::1, vr::9,
+      _resv_b::2, s_dif::1, dif::7, _::binary>> = body
 
-    heading = if s_hdg == 1 do
-      trunc(:erlang.float(hdg) / 1024.0 * 360.0)
-    else
-      nil
-    end
+    heading =
+      if s_hdg == 1 do
+        trunc(:erlang.float(hdg) / 1024.0 * 360.0)
+      else
+        nil
+      end
 
     %AirSpeed{
       intent_change: ic == 1,
       nac: nac,
       heading: heading,
       velocity_kt: as,
-      airspeed_type: (if as_t == 1, do: :true_speed, else: :indicated_speed),
+      airspeed_type: if(as_t == 1, do: :true_speed, else: :indicated_speed),
       vert_rate: vert_rate(vr, s_vr),
       vert_rate_src: vert_rate_source(vrsrc),
       geo_delta: geo_delta(dif, s_dif),
-      supersonic: sub == 4}
+      supersonic: sub == 4
+    }
   end
 
   def decode_type(_type, _msg) do
-    #Logger.debug "Missed parsing #{inspect type}: #{inspect msg}"
+    # Logger.debug "Missed parsing #{inspect type}: #{inspect msg}"
     %{}
   end
 
@@ -241,8 +195,8 @@ defmodule Squitter.Decoding.ExtSquitter do
   def calculate_vector(sign_ew, sign_ns, v_ew, v_ns, sub) do
     import :math
 
-    vel_ew = apply_sign(v_ew - 1, sign_ew) * (if sub == 2, do: 4, else: 1)
-    vel_ns = apply_sign(v_ns - 1, sign_ns) * (if sub == 2, do: 4, else: 1)
+    vel_ew = apply_sign(v_ew - 1, sign_ew) * if sub == 2, do: 4, else: 1
+    vel_ns = apply_sign(v_ns - 1, sign_ns) * if sub == 2, do: 4, else: 1
 
     v = sqrt(pow(vel_ew, 2) + pow(vel_ns, 2) + 0.5)
     h = atan2(vel_ew, vel_ns) * 180.0 / pi() + 0.5
@@ -257,8 +211,10 @@ defmodule Squitter.Decoding.ExtSquitter do
   """
   def vert_rate(0, _sign),
     do: nil
+
   def vert_rate(1, _sign),
     do: 0
+
   def vert_rate(raw_vr, sign),
     do: apply_sign(raw_vr * 64, sign)
 
@@ -266,7 +222,7 @@ defmodule Squitter.Decoding.ExtSquitter do
   Decode vertical rate source.
   """
   def vert_rate_source(vrsrc),
-    do: if vrsrc == 0, do: :geo, else: :baro
+    do: if(vrsrc == 0, do: :geo, else: :baro)
 
   @doc """
   Decode the Navigational Integrity Category (NIC)
@@ -295,35 +251,50 @@ defmodule Squitter.Decoding.ExtSquitter do
       cond do
         tc == 9 && nicsb == 0 ->
           {11, %{limit: 7.5, unit: :m}}
+
         tc == 10 && nicsb == 0 ->
           {10, %{limit: 25, unit: :m}}
+
         tc == 11 && nicsb == 1 ->
           {9, %{limit: 74, unit: :m}}
+
         tc == 11 && nicsb == 0 ->
           {8, %{limit: 0.1, unit: :NM}}
+
         tc == 12 && nicsb == 0 ->
           {7, %{limit: 0.2, unit: :NM}}
+
         tc == 13 && nicsb == 1 && nicsa == 0 ->
           {6, %{limit: 0.3, unit: :NM}}
+
         tc == 13 && nicsb == 0 ->
           {6, %{limit: 0.5, unit: :NM}}
+
         tc == 13 && nicsb == 1 && nicsa == 1 ->
           {6, %{limit: 0.6, unit: :NM}}
+
         tc == 14 && nicsb == 0 ->
           {5, %{limit: 1.0, unit: :NM}}
+
         tc == 15 && nicsb == 0 ->
           {4, %{limit: 2, unit: :NM}}
+
         tc == 16 && nicsb == 1 ->
           {3, %{limit: 4, unit: :NM}}
+
         tc == 16 && nicsb == 0 ->
           {2, %{limit: 8, unit: :NM}}
+
         tc == 17 && nicsb == 0 ->
           {1, %{limit: 20, unit: :NM}}
+
         tc == 18 && nicsb == 0 ->
           {0, %{limit: :unknown}}
+
         true ->
           {:unknown, :unknown}
       end
+
     %{pos | nic: nic, rc: rc}
   end
 
@@ -335,8 +306,10 @@ defmodule Squitter.Decoding.ExtSquitter do
   """
   def geo_delta(0, _sign),
     do: nil
+
   def geo_delta(1, _sign),
     do: 0
+
   def geo_delta(raw_delta, sign),
     do: apply_sign(raw_delta * 25, sign)
 

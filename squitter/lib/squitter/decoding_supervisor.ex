@@ -18,7 +18,10 @@ defmodule Squitter.DecodingSupervisor do
       else
         # If we're pointing to localhost, then we need to startup an instance of dump1090.
         if avr_host == "localhost" do
-          worker(Squitter.Service.Dump1090, [dump1090_path, ["--net", "--fix", "--gain", to_string(gain), "--quiet"]])
+          worker(Squitter.Service.Dump1090, [
+            dump1090_path,
+            ["--net", "--fix", "--gain", to_string(gain), "--quiet"]
+          ])
         else
           []
         end
@@ -28,11 +31,13 @@ defmodule Squitter.DecodingSupervisor do
 
     # TODO: Convert to new spec structure in 1.5.
 
-    children = [
-      dump1090_worker,
-      worker(Squitter.AvrTcpStage, [avr_host, avr_port, partitions]),
-      setup_decoders(partitions),
-    ] |> List.flatten
+    children =
+      [
+        dump1090_worker,
+        worker(Squitter.AvrTcpStage, [avr_host, avr_port, partitions]),
+        setup_decoders(partitions)
+      ]
+      |> List.flatten()
 
     supervise(children, strategy: :one_for_all, max_restarts: 10, max_seconds: 3)
   end
@@ -43,9 +48,9 @@ defmodule Squitter.DecodingSupervisor do
 
   defp setup_decoders(partitions) do
     partitions
-    |> Enum.with_index
-    |> Enum.map(fn({p, i}) ->
-         worker(Squitter.DecoderStage, [p], id: "avr_decoder_#{i}")
-       end)
+    |> Enum.with_index()
+    |> Enum.map(fn {p, i} ->
+      worker(Squitter.DecoderStage, [p], id: "avr_decoder_#{i}")
+    end)
   end
 end

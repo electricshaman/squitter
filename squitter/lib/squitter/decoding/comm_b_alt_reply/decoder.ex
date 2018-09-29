@@ -7,7 +7,7 @@ defmodule Squitter.Decoding.CommBAltitudeReply do
   defstruct [:df, :icao, :msg, :checksum, :parity, :pi, :crc, :time]
 
   # TODO: Rename pi to ap.  pi is on the uplink
-  def decode(time, <<@df :: 5, _control :: 27-bits, _payload :: 56-bits, pi :: 24-unsigned>> = msg) do
+  def decode(time, <<@df::5, _control::27-bits, _payload::56-bits, pi::24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 112)
     {:ok, address} = ModeS.icao_address(msg, checksum)
     parity = ModeS.parity(pi, address)
@@ -20,9 +20,10 @@ defmodule Squitter.Decoding.CommBAltitudeReply do
       checksum: checksum,
       parity: parity,
       pi: pi,
-      crc: (if checksum == pi, do: :valid, else: :invalid),
+      crc: if(checksum == pi, do: :valid, else: :invalid),
       time: time,
-      msg: msg}
+      msg: msg
+    }
   end
 
   def decode(_time, other) do

@@ -6,7 +6,7 @@ defmodule Squitter.Decoding.LongAcas do
 
   defstruct [:df, :icao, :parity, :pi, :checksum, :crc, :msg, :time]
 
-  def decode(time, <<@df :: 5, _control :: 27-bits, _payload :: 56-bits, pi :: 24-unsigned>> = msg) do
+  def decode(time, <<@df::5, _control::27-bits, _payload::56-bits, pi::24-unsigned>> = msg) do
     checksum = ModeS.checksum(msg, 112)
     {:ok, icao} = ModeS.icao_address(msg, checksum)
     parity = ModeS.parity(pi, icao)
@@ -20,8 +20,9 @@ defmodule Squitter.Decoding.LongAcas do
       parity: parity,
       pi: pi,
       checksum: checksum,
-      crc: (if checksum == parity, do: :valid, else: :invalid),
-      time: time}
+      crc: if(checksum == parity, do: :valid, else: :invalid),
+      time: time
+    }
   end
 
   def decode(_time, other) do

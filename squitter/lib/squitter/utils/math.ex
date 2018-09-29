@@ -8,7 +8,7 @@ defmodule Squitter.Utils.Math do
     do: :math.acos(x)
 
   def pi,
-    do: :math.pi
+    do: :math.pi()
 
   def cos(x),
     do: :math.cos(x)
@@ -23,8 +23,10 @@ defmodule Squitter.Utils.Math do
   Calculate great circle distance between `coord1` and `coord2`
   """
   def calculate_gcd(coord1, coord2, unit \\ :NM)
+
   def calculate_gcd([_lat0, _lon0], :unknown, _unit),
     do: 0.0
+
   def calculate_gcd([lat0, lon0], [lat1, lon1], unit) do
     lat0 = lat0 * pi() / 180.0
     lon0 = lon0 * pi() / 180.0
@@ -48,8 +50,10 @@ defmodule Squitter.Utils.Math do
 
   defp convert(:m, :NM, x),
     do: x / 1852.0
+
   defp convert(:m, :m, x),
     do: x
+
   defp convert(_, _, _x),
     do: {:error, :unknown_unit}
 end
