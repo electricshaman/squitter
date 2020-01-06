@@ -13,7 +13,7 @@ defmodule Squitter.Decoding.CPR do
     lon0 = even_cprlon
     lon1 = odd_cprlon
 
-    j = trunc(floor((59 * lat0 - 60 * lat1) / @cpr_max + 0.5))
+    j = trunc(Float.floor((59 * lat0 - 60 * lat1) / @cpr_max + 0.5))
 
     rlat0 =
       case air_dlat0 * (cpr_mod(j, 60) + lat0 / @cpr_max) do
@@ -39,21 +39,21 @@ defmodule Squitter.Decoding.CPR do
         if fflag? do
           # Odd packet
           ni = n(rlat1, fflag?)
-          m = trunc(floor((lon0 * (nl(rlat1) - 1) - lon1 * nl(rlat1)) / @cpr_max + 0.5))
+          m = trunc(Float.floor((lon0 * (nl(rlat1) - 1) - lon1 * nl(rlat1)) / @cpr_max + 0.5))
           rlon = dlon(rlat1, fflag?, false) * (cpr_mod(m, ni) + lon1 / @cpr_max)
           rlat = rlat1
           {rlat, rlon}
         else
           # Even packet
           ni = n(rlat0, fflag?)
-          m = trunc(floor((lon0 * (nl(rlat0) - 1) - lon1 * nl(rlat0)) / @cpr_max + 0.5))
+          m = trunc(Float.floor((lon0 * (nl(rlat0) - 1) - lon1 * nl(rlat0)) / @cpr_max + 0.5))
           rlon = dlon(rlat0, fflag?, false) * (cpr_mod(m, ni) + lon0 / @cpr_max)
           rlat = rlat0
           {rlat, rlon}
         end
 
       # Renormalize longitude to -180..180
-      lon = lon - floor((lon + 180) / 360) * 360
+      lon = lon - Float.floor((lon + 180) / 360) * 360
 
       {:ok, [Float.round(lat, 6), Float.round(lon, 6)]}
     end
