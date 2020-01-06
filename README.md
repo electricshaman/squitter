@@ -55,3 +55,9 @@ Assuming Nerves and Phoenix (and npm and brunch) are installed.  Nerves is still
 10. `export MIX_TARGET=host` # Only needed if you previously set MIX_TARGET to rpi3
 11. `mix deps.get`
 12. `iex -S mix`
+
+## License
+
+Copyright (C) 2017-2020 Jeff Smith
+
+Squitter source code is licensed under the [MIT License](https://github.com/electricshaman/squitter/blob/master/LICENSE).
