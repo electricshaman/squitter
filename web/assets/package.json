@@ -9,7 +9,7 @@
     "chroma-js": "^1.4.1",
     "datatables.net": "^1.10.20",
     "datatables.net-bs": "^1.10.20",
-    "jquery": "^3.4.0",
+    "jquery": "^3.4.1",
     "leaflet": "^1.2.0",
     "leaflet-easybutton": "^2.2.2",
     "leaflet-hotline": "^0.4.0",
