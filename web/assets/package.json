@@ -8,6 +8,7 @@
   "dependencies": {
     "braces": "^3.0.2",
     "chroma-js": "^1.4.1",
+    "clean-css": "^4.2.1",
     "datatables.net": "^1.10.20",
     "datatables.net-bs": "^1.10.20",
     "forwarded": "^0.1.2",
