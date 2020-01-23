@@ -9,6 +9,7 @@
     "chroma-js": "^1.4.1",
     "datatables.net": "^1.10.20",
     "datatables.net-bs": "^1.10.20",
+    "growl": "^1.10.5",
     "jquery": "^3.4.1",
     "leaflet": "^1.6.0",
     "leaflet-easybutton": "^2.4.0",
