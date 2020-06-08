@@ -246,56 +246,56 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   Source: https://adsb-decode-guide.readthedocs.io/en/latest/content/nicnac.html
   """
-  def assign_nic(%{tc: tc, nic_sa: nicsa, nic_sb: nicsb} = pos) do
+  def assign_nic(position) do
     {nic, rc} =
-      cond do
-        tc == 9 && nicsb == 0 ->
+      case position do
+        %{tc: 9, nic_sb: 0} ->
           {11, %{limit: 7.5, unit: :m}}
 
-        tc == 10 && nicsb == 0 ->
+        %{tc: 10, nic_sb: 0} ->
           {10, %{limit: 25, unit: :m}}
 
-        tc == 11 && nicsb == 1 ->
+        %{tc: 11, nic_sb: 1} ->
           {9, %{limit: 74, unit: :m}}
 
-        tc == 11 && nicsb == 0 ->
+        %{tc: 11, nic_sb: 0} ->
           {8, %{limit: 0.1, unit: :NM}}
 
-        tc == 12 && nicsb == 0 ->
+        %{tc: 12, nic_sb: 0} ->
           {7, %{limit: 0.2, unit: :NM}}
 
-        tc == 13 && nicsb == 1 && nicsa == 0 ->
+        %{tc: 13, nic_sb: 1, nic_sa: 0} ->
           {6, %{limit: 0.3, unit: :NM}}
 
-        tc == 13 && nicsb == 0 ->
+        %{tc: 13, nic_sb: 0} ->
           {6, %{limit: 0.5, unit: :NM}}
 
-        tc == 13 && nicsb == 1 && nicsa == 1 ->
+        %{tc: 13, nic_sb: 1, nic_sa: 1} ->
           {6, %{limit: 0.6, unit: :NM}}
 
-        tc == 14 && nicsb == 0 ->
+        %{tc: 14, nic_sb: 0} ->
           {5, %{limit: 1.0, unit: :NM}}
 
-        tc == 15 && nicsb == 0 ->
+        %{tc: 15, nic_sb: 0} ->
           {4, %{limit: 2, unit: :NM}}
 
-        tc == 16 && nicsb == 1 ->
+        %{tc: 16, nic_sb: 1} ->
           {3, %{limit: 4, unit: :NM}}
 
-        tc == 16 && nicsb == 0 ->
+        %{tc: 16, nic_sb: 0} ->
           {2, %{limit: 8, unit: :NM}}
 
-        tc == 17 && nicsb == 0 ->
+        %{tc: 17, nic_sb: 0} ->
           {1, %{limit: 20, unit: :NM}}
 
-        tc == 18 && nicsb == 0 ->
+        %{tc: 18, nic_sb: 0} ->
           {0, %{limit: :unknown}}
 
-        true ->
+        _ ->
           {:unknown, :unknown}
       end
 
-    %{pos | nic: nic, rc: rc}
+    %{position | nic: nic, rc: rc}
   end
 
   @doc """
