@@ -52,7 +52,7 @@ defmodule Squitter.Aircraft do
        position_history: [],
        timeout_enabled: true,
        master: %{},
-       last_received: System.monotonic_time(:seconds),
+       last_received: System.monotonic_time(:second),
        age: 0
      }}
   end
@@ -420,12 +420,12 @@ defmodule Squitter.Aircraft do
   end
 
   defp set_received(state) do
-    %{state | msgs: state.msgs + 1, last_received: System.monotonic_time(:seconds)}
+    %{state | msgs: state.msgs + 1, last_received: System.monotonic_time(:second)}
     |> set_age
   end
 
   defp set_age(%{last_received: last} = state) do
-    now = System.monotonic_time(:seconds)
+    now = System.monotonic_time(:second)
     %{state | age: now - last}
   end
 

@@ -26,7 +26,7 @@ defmodule Squitter.AvrTcpStage do
   end
 
   def handle_info({:tcp, _socket, data}, %{buffer: buffer} = state) do
-    time = System.monotonic_time(:microseconds)
+    time = System.monotonic_time(:microsecond)
 
     {frames, next_buffer} = AVR.split_frames(buffer ++ data)
 

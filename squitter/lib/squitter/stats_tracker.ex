@@ -12,7 +12,7 @@ defmodule Squitter.StatsTracker do
     Logger.debug("Starting up #{__MODULE__}")
 
     counts = :array.new(@rate_buffer_size, default: 0)
-    times = :array.new(@rate_buffer_size, default: System.monotonic_time(:milliseconds))
+    times = :array.new(@rate_buffer_size, default: System.monotonic_time(:millisecond))
 
     schedule_tick(clock)
 

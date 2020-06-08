@@ -14,7 +14,7 @@ defmodule Squitter.DecoderStage do
   end
 
   def handle_events(events, _from, state) do
-    time = System.monotonic_time(:milliseconds)
+    time = System.monotonic_time(:millisecond)
 
     counts =
       Enum.map(events, fn {time, frame} -> Squitter.Decoding.decode(time, frame) end)
