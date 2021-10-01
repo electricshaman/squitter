@@ -14,7 +14,7 @@ defmodule Squitter.Firmware.Mixfile do
      version: "0.1.0",
      elixir: "~> 1.5",
      target: @target,
-     archives: [nerves_bootstrap: "~> 0.4"],
+     archives: [nerves_bootstrap: "~> 1.0"],
      deps_path: "deps/#{@target}",
      build_path: "_build/#{@target}",
      config_path: "config/config.exs",
