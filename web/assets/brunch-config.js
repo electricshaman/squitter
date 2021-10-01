@@ -42,7 +42,7 @@ exports.config = {
   // Phoenix paths configuration
   paths: {
     // Dependencies and current project directories to watch
-    watched: ["static", "css", "js", "node_modules/datatables.net-bs/css"],
+    watched: ["css", "js", "node_modules/datatables.net-bs/css"],
     // Where to compile files to
     public: "../priv/static"
   },
