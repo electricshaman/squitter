@@ -30,14 +30,14 @@ defmodule Squitter.Web.Mixfile do
 
   defp deps do
     [
-      {:phoenix, "~> 1.6.0"},
-      {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_ecto, "~> 4.4"},
-      {:phoenix_html, "~> 3.0"},
-      {:phoenix_live_reload, "~> 1.3"},
-      {:gettext, "~> 0.18.2"},
-      {:cowboy, "~> 2.9"},
-      {:gen_stage, "~> 1.1"}
+      {:phoenix, "~> 1.3.0"},
+      {:phoenix_pubsub, "~> 1.0"},
+      {:phoenix_ecto, "~> 3.2"},
+      {:phoenix_html, "~> 2.10"},
+      {:phoenix_live_reload, "~> 1.0"},
+      {:gettext, "~> 0.11"},
+      {:cowboy, "~> 1.0"},
+      {:gen_stage, "~> 0.11"}
     ]
   end
 
