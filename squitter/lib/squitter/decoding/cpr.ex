@@ -95,9 +95,9 @@ defmodule Squitter.Decoding.CPR do
   @doc """
   Number of longitude zones for the given latitude `lat`
   """
-  def nl(lat) do
-    if lat < 0, do: nl(-lat)
+  def nl(lat) when lat < 0, do: nl(-lat)
 
+  def nl(lat) do
     cond do
       lat < 10.47047130 -> 59
       lat < 14.82817437 -> 58
