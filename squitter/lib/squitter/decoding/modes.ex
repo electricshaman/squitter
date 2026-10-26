@@ -1,31 +1,53 @@
 defmodule Squitter.Decoding.ModeS do
-  require Logger
-  use Bitwise, only_operators: true
+  import Bitwise
   import Squitter.Decoding.Utils
 
-  @on_load :load_nif
-  @app Mix.Project.config()[:app]
-  @compile {:autoload, false}
+  # CRC-24 generator polynomial (0x1FFF409 without the implicit top bit).
+  @poly 0xFFF409
 
-  def load_nif do
-    so_path = Path.join(:code.priv_dir(@app), "modes")
+  # CRC of each byte value, for a byte-at-a-time CRC.
+  @crc_table (for i <- 0..255 do
+                Enum.reduce(1..8, i <<< 16, fn _, c ->
+                  c = c <<< 1
+                  if (c &&& 0x1000000) != 0, do: bxor(c, @poly) &&& 0xFFFFFF, else: c
+                end)
+              end)
+             |> List.to_tuple()
 
-    case :erlang.load_nif(so_path, 0) do
-      :ok ->
-        :ok
-
-      {:error, {_reason, msg}} ->
-        Logger.warn("Unable to load ModeS NIF: #{to_string(msg)}")
-    end
+  @doc """
+  Mode S CRC-24 over the data bits of a 56 or 112 bit frame (everything before
+  the 24 parity bits). Raises `ArgumentError` for any other bit count, or if
+  `msg` is shorter than `bits`.
+  """
+  def checksum(msg, bits)
+      when bits in [56, 112] and is_binary(msg) and byte_size(msg) * 8 >= bits do
+    msg
+    |> binary_part(0, div(bits - 24, 8))
+    |> crc(0)
   end
 
-  def checksum(_msg, _bits) do
-    raise "NIF checksum/2 not implemented"
+  def checksum(_msg, _bits), do: raise(ArgumentError, "expected a 56 or 112 bit frame")
+
+  defp crc(<<byte, rest::binary>>, acc) do
+    index = bxor(acc >>> 16, byte)
+    crc(rest, bxor(acc <<< 8 &&& 0xFFFFFF, elem(@crc_table, index)))
   end
 
-  def gillham_altitude(_coded) do
-    raise "NIF gillham_altitude/1 not implemented"
+  defp crc(<<>>, acc), do: acc
+
+  @doc """
+  Altitude in feet from an 11-bit Gillham code ordered D2 D4 A1 A2 A4 B1 B2 B4
+  C1 C2 C4. Callers must reject invalid codes first; see
+  `Squitter.Decoding.ExtSquitter`.
+  """
+  def gillham_altitude(coded) when is_integer(coded) do
+    # Gray-decode the whole code; the reflected 100 ft part then needs fixing up.
+    value = coded |> ungray(8) |> ungray(4) |> ungray(2) |> ungray(1)
+    value = value - ((value >>> 4) * 6 + div(rem(value, 16), 5) * 2)
+    (value - 13) * 100
   end
+
+  defp ungray(value, shift), do: bxor(value, value >>> shift)
 
   def icao_address(<<df::5, _rest::bits>> = msg, checksum)
       when df in [0, 4, 5, 16, 20, 21] or df >= 24 do
@@ -34,7 +56,7 @@ defmodule Squitter.Decoding.ModeS do
 
     address =
       Enum.zip(btol(check_bytes), btol(parity))
-      |> Enum.map(fn {c, p} -> c ^^^ p end)
+      |> Enum.map(fn {c, p} -> bxor(c, p) end)
       |> to_hex_string
 
     {:ok, address}
@@ -84,7 +106,7 @@ defmodule Squitter.Decoding.ModeS do
 
     <<parity::24-unsigned>> =
       Enum.zip(btol(address_bytes), btol(pi_bytes))
-      |> Enum.map(fn {a, p} -> a ^^^ p end)
+      |> Enum.map(fn {a, p} -> bxor(a, p) end)
       |> ltob()
 
     parity
