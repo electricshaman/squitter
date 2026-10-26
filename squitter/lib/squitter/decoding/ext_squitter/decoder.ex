@@ -15,6 +15,10 @@ defmodule Squitter.Decoding.ExtSquitter do
   @df [17, 18]
   @head 37
 
+  # DF18 control field values whose ME isn't a standard extended squitter:
+  # coarse TIS-B (3), TIS-B/ADS-R management (4) and reserved (7).
+  @df18_unsupported_cf [3, 4, 7]
+
   defstruct [:df, :tc, :ca, :icao, :msg, :pi, :crc, :type_msg, :time]
 
   def decode(time, <<df::5, ca::3, _icao::3-bytes, data::7-bytes, pi::24-unsigned>> = msg)
@@ -23,7 +27,14 @@ defmodule Squitter.Decoding.ExtSquitter do
     {:ok, icao_address} = ModeS.icao_address(msg, checksum)
 
     <<tc::5, _rest::bits>> = data
-    type = TypeCode.decode(tc)
+
+    {type, type_msg} =
+      if df == 18 and ca in @df18_unsupported_cf do
+        {{:unsupported, {:cf, ca}}, %{}}
+      else
+        type = TypeCode.decode(tc)
+        {type, decode_type(type, msg)}
+      end
 
     StatsTracker.count({:df, df, :decoded})
 
@@ -31,7 +42,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       time: time,
       df: df,
       tc: type,
-      type_msg: decode_type(type, msg),
+      type_msg: type_msg,
       ca: ca,
       icao: icao_address,
       msg: msg,

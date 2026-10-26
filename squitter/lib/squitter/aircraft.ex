@@ -102,6 +102,11 @@ defmodule Squitter.Aircraft do
     calculate_position(%{state | altitude: alt || state.altitude, last_odd_position: {time, pos}})
   end
 
+  defp handle_msg(%{tc: {:unsupported, _}}, _state) do
+    # Not a format we decode (e.g. DF18 TIS-B management); don't let it keep the track alive.
+    {:error, :unsupported}
+  end
+
   defp handle_msg(%{tc: :no_position_info}, state) do
     # TODO
     {:ok, state}

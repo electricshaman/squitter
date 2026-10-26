@@ -144,5 +144,10 @@ defmodule Squitter.ExtSquitterTest do
       refute match?(%{callsign: _}, decoded.type_msg),
              "CF=#{cf} decoded as aircraft identification: #{inspect(decoded.type_msg)}"
     end
+
+    for cf <- [0, 2, 6] do
+      decoded = ident_me |> Frames.es(df: 18, ca: cf) |> decode()
+      assert decoded.type_msg.callsign == "TEST1234", "CF=#{cf}"
+    end
   end
 end
