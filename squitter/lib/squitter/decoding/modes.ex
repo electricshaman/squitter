@@ -48,12 +48,12 @@ defmodule Squitter.Decoding.ModeS do
     :error
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg) when df in [0, 4, 5, 16] do
+  def icao_address(<<df::5, _rest::bits>> = msg) when df in [0, 4, 5] do
     checksum = checksum(msg, 56)
     icao_address(msg, checksum)
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg) when df in [20, 21, 24] do
+  def icao_address(<<df::5, _rest::bits>> = msg) when df in [16, 20, 21, 24] do
     checksum = checksum(msg, 112)
     icao_address(msg, checksum)
   end
