@@ -34,6 +34,16 @@ defmodule Squitter.AircraftSupervisorTest do
     assert_receive {:"$gen_cast", {:dispatch, ^msg}}
   end
 
+  @tag bug: :df11_interrogator
+  test "DF11 with a nonzero interrogator code reaches only a tracked aircraft" do
+    msg = Decoding.decode(0, Frames.seal(<<11::5, 5::3, @address::24, 0::24>>, 11))
+    assert AircraftSupervisor.dispatch(msg) == {:error, :unknown_address}
+
+    {:ok, _} = Registry.register(Squitter.AircraftRegistry, "4840D6", nil)
+    assert AircraftSupervisor.dispatch(msg) == :ok
+    assert_receive {:"$gen_cast", {:dispatch, ^msg}}
+  end
+
   @tag bug: :ap_crc
   test "messages with an invalid CRC are dropped without creating an aircraft" do
     <<head::bitstring-size(100), b::1, tail::bitstring>> = Frames.es(<<0::56>>)
