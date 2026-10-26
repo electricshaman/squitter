@@ -27,7 +27,8 @@ defmodule Squitter.Decoding.ModeS do
     raise "NIF gillham_altitude/1 not implemented"
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg, checksum) when df in [0, 4, 5, 16, 20, 21, 24] do
+  def icao_address(<<df::5, _rest::bits>> = msg, checksum)
+      when df in [0, 4, 5, 16, 20, 21] or df >= 24 do
     parity = binary_part(msg, byte_size(msg), -3)
     <<check_bytes::3-bytes>> = <<checksum::24>>
 
@@ -53,7 +54,7 @@ defmodule Squitter.Decoding.ModeS do
     icao_address(msg, checksum)
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg) when df in [16, 20, 21, 24] do
+  def icao_address(<<df::5, _rest::bits>> = msg) when df in [16, 20, 21] or df >= 24 do
     checksum = checksum(msg, 112)
     icao_address(msg, checksum)
   end

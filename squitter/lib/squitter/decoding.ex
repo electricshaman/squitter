@@ -44,7 +44,8 @@ defmodule Squitter.Decoding do
       22 ->
         MilExtSquitter.decode(time, msg)
 
-      24 ->
+      # DF24 is identified by its first two bits (11); the other three are KE/ND.
+      df when df >= 24 ->
         CommDElm.decode(time, msg)
 
       _ ->
