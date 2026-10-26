@@ -10,6 +10,10 @@ defmodule Squitter.Aircraft do
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @air_pos_time_delta_max_s 5.0
+  # Bound on stored positions per aircraft, and how many of the newest stay at
+  # full resolution; see add_position/2.
+  @max_position_history 500
+  @recent_position_history 100
   # Fastest plausible ground speed between fixes; allows supersonic military traffic.
   @max_plausible_speed_kt 1500
   @timeout_period_s 60
@@ -52,7 +56,10 @@ defmodule Squitter.Aircraft do
        vr_src: nil,
        squawk: "",
        distance: 0.0,
+       # {seq, [lat, lon, alt]}, newest first
        position_history: [],
+       position_seq: 0,
+       position_stride: 1,
        timeout_enabled: true,
        master: %{},
        last_received: System.monotonic_time(:second),
@@ -233,19 +240,16 @@ defmodule Squitter.Aircraft do
     latlon = [lat, lon]
     position = latlon ++ [alt]
 
-    pos_history = [position | state.position_history]
-
     {:ok, site_location} = Site.location()
     distance = calculate_gcd(latlon, site_location)
 
     {:ok,
      %{
-       state
+       add_position(state, position)
        | altitude: alt,
          velocity_kt: spd,
          distance: distance,
          latlon: latlon,
-         position_history: pos_history,
          heading: trak
      }}
   end
@@ -277,7 +281,10 @@ defmodule Squitter.Aircraft do
       :country
     ])
     # Reverse so most recent is at the end
-    |> Map.put(:position_history, Enum.reverse(state.position_history))
+    |> Map.put(
+      :position_history,
+      Enum.reduce(state.position_history, [], fn {_seq, p}, acc -> [p | acc] end)
+    )
     |> Map.put(:latlon, state.latlon)
     |> Map.put(
       :registration,
@@ -308,16 +315,12 @@ defmodule Squitter.Aircraft do
 
       position = latlon ++ [state.altitude]
 
-      # Most recent position is the head of the list
-      pos_history = [position | state.position_history]
-
       {:ok,
        %{
-         state
+         add_position(state, position)
          | latlon: latlon,
            last_position_time: fix_time,
-           distance: distance,
-           position_history: pos_history
+           distance: distance
        }}
     else
       {:error, :air_pos_time_delta} ->
@@ -384,6 +387,30 @@ defmodule Squitter.Aircraft do
   end
 
   # Private helpers
+
+  # Positions are numbered as they arrive. Over the limit, the newest few stay at
+  # full resolution and older ones are kept only every `stride` positions,
+  # doubling the stride as needed. The whole flight stays evenly sampled, always
+  # including its first fix, and the history never exceeds the limit.
+  defp add_position(%{position_seq: seq} = state, position) do
+    history = [{seq, position} | state.position_history]
+
+    {history, stride} =
+      if length(history) > @max_position_history,
+        do: thin_positions(history, state.position_stride),
+        else: {history, state.position_stride}
+
+    %{state | position_history: history, position_seq: seq + 1, position_stride: stride}
+  end
+
+  defp thin_positions(history, stride) do
+    {recent, older} = Enum.split(history, @recent_position_history)
+    history = recent ++ Enum.filter(older, fn {seq, _} -> rem(seq, stride) == 0 end)
+
+    if length(history) > @max_position_history,
+      do: thin_positions(history, stride * 2),
+      else: {history, stride}
+  end
 
   # Reject a fix that couldn't be reached from the last one at a plausible speed.
   # Times are in microseconds; a CPR pair can span the pairing window, so allow that as slack.
