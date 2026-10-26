@@ -61,7 +61,9 @@ defmodule Squitter.CRCTest do
   @tag bug: :df11_interrogator
   test "DF11 replying to a nonzero interrogator code is valid" do
     frame = Frames.seal(<<11::5, 5::3, @address::24, 0::24>>, 11)
-    assert Decoding.decode(0, frame).crc == :valid
+    decoded = Decoding.decode(0, frame)
+    assert decoded.crc == :valid
+    assert decoded.interrogator == 11
   end
 
   @tag bug: :nif_bounds
