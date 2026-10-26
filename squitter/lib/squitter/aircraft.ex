@@ -10,7 +10,8 @@ defmodule Squitter.Aircraft do
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @air_pos_time_delta_max_s 5.0
-  @air_pos_dist_delta_max_nm 100.0
+  # Fastest plausible ground speed between fixes; allows supersonic military traffic.
+  @max_plausible_speed_kt 1500
   @timeout_period_s 60
   @clock_s 1
   @master_attempts 10
@@ -40,6 +41,7 @@ defmodule Squitter.Aircraft do
        altitude: 0,
        callsign: "",
        latlon: nil,
+       last_position_time: nil,
        last_even_position: nil,
        last_odd_position: nil,
        velocity_kt: 0,
@@ -295,10 +297,11 @@ defmodule Squitter.Aircraft do
         %{last_even_position: {even_time, even}, last_odd_position: {odd_time, odd}} = state
       ) do
     fflag? = odd_time > even_time
+    fix_time = max(even_time, odd_time)
 
     with :ok <- check_air_pos_time_delta(even_time, odd_time),
          {:ok, latlon} <- decode_airborne_cpr(even, odd, fflag?),
-         :ok <- check_air_pos_dist(latlon, state.latlon) do
+         :ok <- check_air_pos_speed(latlon, fix_time, state) do
       {:ok, site_location} = Site.location()
       distance = calculate_gcd(latlon, site_location)
 
@@ -307,7 +310,14 @@ defmodule Squitter.Aircraft do
       # Most recent position is the head of the list
       pos_history = [position | state.position_history]
 
-      {:ok, %{state | latlon: latlon, distance: distance, position_history: pos_history}}
+      {:ok,
+       %{
+         state
+         | latlon: latlon,
+           last_position_time: fix_time,
+           distance: distance,
+           position_history: pos_history
+       }}
     else
       {:error, :air_pos_time_delta} ->
         # Too long between messages: drop the older one so the newer can pair with the next.
@@ -315,9 +325,9 @@ defmodule Squitter.Aircraft do
           do: {:ok, %{state | last_even_position: nil}},
           else: {:ok, %{state | last_odd_position: nil}}
 
-      {:error, {:air_pos_dist, position, dist}} ->
+      {:error, {:air_pos_speed, position, dist}} ->
         Logger.warn(
-          "[#{state.address}:#{state.callsign}] Skipping current position #{inspect(position)}: over #{@air_pos_dist_delta_max_nm} NM from last position of #{inspect(state.latlon)} (#{dist} NM)"
+          "[#{state.address}:#{state.callsign}] Skipping current position #{inspect(position)}: #{dist} NM from last position of #{inspect(state.latlon)} implies over #{@max_plausible_speed_kt} kt"
         )
 
         {:ok, state}
@@ -374,22 +384,18 @@ defmodule Squitter.Aircraft do
 
   # Private helpers
 
-  defp check_air_pos_dist(_current_pos, nil), do: :ok
+  # Reject a fix that couldn't be reached from the last one at a plausible speed.
+  # Times are in microseconds; a CPR pair can span the pairing window, so allow that as slack.
+  defp check_air_pos_speed(_pos, _time, %{latlon: nil}), do: :ok
+  defp check_air_pos_speed(_pos, _time, %{last_position_time: nil}), do: :ok
 
-  defp check_air_pos_dist(current_pos, previous_pos) do
-    dist_delta = calculate_gcd(current_pos, previous_pos)
+  defp check_air_pos_speed(pos, time, %{latlon: last_pos, last_position_time: last_time}) do
+    dist = calculate_gcd(pos, last_pos)
+    elapsed_h = (abs(time - last_time) / 1_000_000 + @air_pos_time_delta_max_s) / 3600
 
-    # Check distance from site and from last good position is within range
-    {:ok, site_location} = Site.location()
-    {:ok, range_limit} = Site.range_limit()
-
-    dist_from_site = calculate_gcd(current_pos, site_location)
-
-    if dist_delta > @air_pos_dist_delta_max_nm && dist_from_site > range_limit do
-      {:error, {:air_pos_dist, current_pos, dist_delta}}
-    else
-      :ok
-    end
+    if dist > @max_plausible_speed_kt * elapsed_h,
+      do: {:error, {:air_pos_speed, pos, dist}},
+      else: :ok
   end
 
   defp decode_airborne_cpr(even, odd, fflag?) do
