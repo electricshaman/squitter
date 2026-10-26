@@ -20,7 +20,9 @@ defmodule Squitter.Decoding.CommBAltitudeReply do
       checksum: checksum,
       parity: parity,
       pi: pi,
-      crc: if(checksum == pi, do: :valid, else: :invalid),
+      # The address is recovered from the AP field, so the CRC can only be checked
+      # against a known address. See AircraftSupervisor.dispatch/1.
+      crc: :unverified,
       time: time,
       msg: msg
     }

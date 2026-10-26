@@ -1,4 +1,7 @@
 defmodule Squitter.CountryLookup do
+  # Non-ICAO addresses (see ModeS.icao_address/2) aren't allocated to a country.
+  def get("~" <> _address), do: ""
+
   def get(address) do
     addr_int = String.to_integer(address, 16)
 

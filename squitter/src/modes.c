@@ -77,6 +77,10 @@ checksum(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
   if(!enif_get_int(env, argv[1], &bits))
     return enif_make_badarg(env);
 
+  /* The table only covers 56 and 112 bit frames, and msg must hold them. */
+  if((bits != 56 && bits != 112) || msg.size * 8 < (size_t)bits)
+    return enif_make_badarg(env);
+
   #ifdef DEBUG
   unsigned i;
   printf("received binary of length %zu\r\ndata: ", msg.size);

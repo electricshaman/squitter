@@ -1,6 +1,5 @@
 defmodule Squitter.Decoding.ExtSquitter do
   require Logger
-  import Squitter.Decoding.Utils
   alias Squitter.StatsTracker
   alias Squitter.Decoding.ModeS
 
@@ -16,6 +15,10 @@ defmodule Squitter.Decoding.ExtSquitter do
   @df [17, 18]
   @head 37
 
+  # DF18 control field values whose ME isn't a standard extended squitter:
+  # coarse TIS-B (3), TIS-B/ADS-R management (4) and reserved (7).
+  @df18_unsupported_cf [3, 4, 7]
+
   defstruct [:df, :tc, :ca, :icao, :msg, :pi, :crc, :type_msg, :time]
 
   def decode(time, <<df::5, ca::3, _icao::3-bytes, data::7-bytes, pi::24-unsigned>> = msg)
@@ -24,7 +27,14 @@ defmodule Squitter.Decoding.ExtSquitter do
     {:ok, icao_address} = ModeS.icao_address(msg, checksum)
 
     <<tc::5, _rest::bits>> = data
-    type = TypeCode.decode(tc)
+
+    {type, type_msg} =
+      if df == 18 and ca in @df18_unsupported_cf do
+        {{:unsupported, {:cf, ca}}, %{}}
+      else
+        type = TypeCode.decode(tc)
+        {type, decode_type(type, msg)}
+      end
 
     StatsTracker.count({:df, df, :decoded})
 
@@ -32,7 +42,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       time: time,
       df: df,
       tc: type,
-      type_msg: decode_type(type, msg),
+      type_msg: type_msg,
       ca: ca,
       icao: icao_address,
       msg: msg,
@@ -65,22 +75,7 @@ defmodule Squitter.Decoding.ExtSquitter do
     <<_::@head, ss::2, nicsb::1, alt_bin::12-bits, t::1, f::1, lat_cpr::17, lon_cpr::17,
       _::binary>> = msg
 
-    <<alt_a::7, alt_q::1, alt_b::4>> = alt_bin
-
-    alt =
-      if alt_q == 1 do
-        <<n::11>> = <<alt_a::7, alt_b::4>>
-        n * 25 - 1000
-      else
-        # TODO: Clean this up somehow
-        <<c1::1, a1::1, c2::1, a2::1, c4::1, a4::1, b1::1, _::1, b2::1, d2::1, b4::1, d4::1>> =
-          alt_bin
-
-        <<n::11>> =
-          <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>>
-
-        ModeS.gillham_altitude(n)
-      end
+    alt = decode_altitude(alt_type, alt_bin)
 
     %AirbornePosition{
       tc: tc,
@@ -88,7 +83,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       nic_sb: nicsb,
       alt: alt,
       alt_type: alt_type,
-      utc_time: to_bool(t),
+      utc_time: t == 1,
       flag: f,
       lat_cpr: lat_cpr,
       lon_cpr: lon_cpr
@@ -175,7 +170,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       intent_change: ic == 1,
       nac: nac,
       heading: heading,
-      velocity_kt: as,
+      velocity_kt: unscale(as, if(sub == 4, do: 4, else: 1)),
       airspeed_type: if(as_t == 1, do: :true_speed, else: :indicated_speed),
       vert_rate: vert_rate(vr, s_vr),
       vert_rate_src: vert_rate_source(vrsrc),
@@ -195,28 +190,25 @@ defmodule Squitter.Decoding.ExtSquitter do
   def calculate_vector(sign_ew, sign_ns, v_ew, v_ns, sub) do
     import :math
 
-    vel_ew = apply_sign(v_ew - 1, sign_ew) * if sub == 2, do: 4, else: 1
-    vel_ns = apply_sign(v_ns - 1, sign_ns) * if sub == 2, do: 4, else: 1
+    lsb = if sub == 2, do: 4, else: 1
+    vel_ew = v_ew |> unscale(lsb) |> apply_sign(sign_ew)
+    vel_ns = v_ns |> unscale(lsb) |> apply_sign(sign_ns)
 
-    v = sqrt(pow(vel_ew, 2) + pow(vel_ns, 2) + 0.5)
-    h = atan2(vel_ew, vel_ns) * 180.0 / pi() + 0.5
+    if is_nil(vel_ew) or is_nil(vel_ns) do
+      {nil, nil}
+    else
+      v = sqrt(pow(vel_ew, 2) + pow(vel_ns, 2))
+      h = atan2(vel_ew, vel_ns) * 180.0 / pi()
 
-    h = if h < 0, do: h + 360, else: h
-
-    {trunc(v), trunc(h)}
+      {round(v), rem(round(h) + 360, 360)}
+    end
   end
 
   @doc """
   Decode vertical rate.
   """
-  def vert_rate(0, _sign),
-    do: nil
-
-  def vert_rate(1, _sign),
-    do: 0
-
   def vert_rate(raw_vr, sign),
-    do: apply_sign(raw_vr * 64, sign)
+    do: raw_vr |> unscale(64) |> apply_sign(sign)
 
   @doc """
   Decode vertical rate source.
@@ -243,6 +235,9 @@ defmodule Squitter.Decoding.ExtSquitter do
   | 16 | 0                        | 2   | < 8 NM (14.8 km)   |
   | 17 | 0                        | 1   | < 20 NM (37.0 km)  |
   | 18 | 0                        | 0   | > 20 NM or Unknown |
+  | 20 | -                        | 11  | < 7.5 m            |
+  | 21 | -                        | 10  | < 25 m             |
+  | 22 | -                        | 0   | > 25 m or Unknown  |
 
   Source: https://adsb-decode-guide.readthedocs.io/en/latest/content/nicnac.html
   """
@@ -291,6 +286,15 @@ defmodule Squitter.Decoding.ExtSquitter do
         %{tc: 18, nic_sb: 0} ->
           {0, %{limit: :unknown}}
 
+        %{tc: 20} ->
+          {11, %{limit: 7.5, unit: :m}}
+
+        %{tc: 21} ->
+          {10, %{limit: 25, unit: :m}}
+
+        %{tc: 22} ->
+          {0, %{limit: :unknown}}
+
         _ ->
           {:unknown, :unknown}
       end
@@ -304,16 +308,43 @@ defmodule Squitter.Decoding.ExtSquitter do
   If the result is negative, geometric altitude is below barometric altitude.
   If the result is nil, no delta information is available.
   """
-  def geo_delta(0, _sign),
-    do: nil
-
-  def geo_delta(1, _sign),
-    do: 0
-
   def geo_delta(raw_delta, sign),
-    do: apply_sign(raw_delta * 25, sign)
+    do: raw_delta |> unscale(25) |> apply_sign(sign)
 
   # Private Helpers
+
+  # GNSS height (TC 20-22) is a plain 12-bit value in meters; report feet like baro.
+  defp decode_altitude(:airborne_pos_gnss_height, <<meters::12>>),
+    do: round(meters * 3.28084)
+
+  defp decode_altitude(:airborne_pos_baro_alt, alt_bin) do
+    <<alt_a::7, alt_q::1, alt_b::4>> = alt_bin
+
+    if alt_q == 1 do
+      <<n::11>> = <<alt_a::7, alt_b::4>>
+      n * 25 - 1000
+    else
+      # TODO: Clean this up somehow
+      <<c1::1, a1::1, c2::1, a2::1, c4::1, a4::1, b1::1, _::1, b2::1, d2::1, b4::1, d4::1>> =
+        alt_bin
+
+      # Only five 100 ft codes are valid. All-zero also means "not available".
+      if {c1, c2, c4} in [{0, 0, 0}, {1, 0, 1}, {1, 1, 1}] do
+        nil
+      else
+        <<n::11>> =
+          <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>>
+
+        ModeS.gillham_altitude(n)
+      end
+    end
+  end
+
+  # Velocity fields encode "not available" as 0 and a value v as v / lsb + 1.
+  defp unscale(0, _lsb), do: nil
+  defp unscale(raw, lsb), do: (raw - 1) * lsb
+
+  defp apply_sign(nil, _sign), do: nil
 
   defp apply_sign(value, sign) do
     # When the sign bit is 1, the value is negative.

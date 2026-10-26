@@ -27,7 +27,8 @@ defmodule Squitter.Decoding.ModeS do
     raise "NIF gillham_altitude/1 not implemented"
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg, checksum) when df in [0, 4, 5, 16, 20, 21, 24] do
+  def icao_address(<<df::5, _rest::bits>> = msg, checksum)
+      when df in [0, 4, 5, 16, 20, 21] or df >= 24 do
     parity = binary_part(msg, byte_size(msg), -3)
     <<check_bytes::3-bytes>> = <<checksum::24>>
 
@@ -39,8 +40,19 @@ defmodule Squitter.Decoding.ModeS do
     {:ok, address}
   end
 
+  # DF18 CF 1 and 5 carry non-ICAO addresses. Prefix them (readsb's convention)
+  # so they can't collide with a real aircraft's address.
+  def icao_address(<<18::5, cf::3, address::3-bytes, _rest::binary>>, _checksum)
+      when cf in [1, 5] do
+    {:ok, "~" <> to_hex_string(address)}
+  end
+
   def icao_address(<<df::5, _::3, icao::3-bytes, _rest::binary>>, _checksum)
       when df in [11, 17, 18] do
+    {:ok, to_hex_string(icao)}
+  end
+
+  def icao_address(<<19::5, 0::3, icao::3-bytes, _rest::binary>>, _checksum) do
     {:ok, to_hex_string(icao)}
   end
 
@@ -48,17 +60,17 @@ defmodule Squitter.Decoding.ModeS do
     :error
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg) when df in [0, 4, 5, 16] do
+  def icao_address(<<df::5, _rest::bits>> = msg) when df in [0, 4, 5] do
     checksum = checksum(msg, 56)
     icao_address(msg, checksum)
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg) when df in [20, 21, 24] do
+  def icao_address(<<df::5, _rest::bits>> = msg) when df in [16, 20, 21] or df >= 24 do
     checksum = checksum(msg, 112)
     icao_address(msg, checksum)
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg) when df in [11, 17, 18] do
+  def icao_address(<<df::5, _rest::bits>> = msg) when df in [11, 17, 18, 19] do
     icao_address(msg, nil)
   end
 
