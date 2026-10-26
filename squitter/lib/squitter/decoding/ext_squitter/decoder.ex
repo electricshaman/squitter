@@ -1,6 +1,5 @@
 defmodule Squitter.Decoding.ExtSquitter do
   require Logger
-  import Squitter.Decoding.Utils
   alias Squitter.StatsTracker
   alias Squitter.Decoding.ModeS
 
