@@ -88,7 +88,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       nic_sb: nicsb,
       alt: alt,
       alt_type: alt_type,
-      utc_time: to_bool(t),
+      utc_time: t == 1,
       flag: f,
       lat_cpr: lat_cpr,
       lon_cpr: lon_cpr

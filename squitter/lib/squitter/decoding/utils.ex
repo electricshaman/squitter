@@ -1,8 +1,4 @@
 defmodule Squitter.Decoding.Utils do
-  def to_bool(0), do: true
-  def to_bool(1), do: false
-  def to_bool(_), do: :error
-
   def to_hex_string(data) when is_binary(data) do
     btol(data)
     |> to_hex_string
