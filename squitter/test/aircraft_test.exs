@@ -15,6 +15,8 @@ defmodule Squitter.AircraftTest do
       altitude: 38000,
       latlon: latlon,
       last_position_time: last_position_time,
+      position_seq: 0,
+      position_stride: 1,
       distance: 0.0,
       position_history: [],
       last_even_position: even,
@@ -50,6 +52,26 @@ defmodule Squitter.AircraftTest do
     {:ok, new} = Aircraft.calculate_position(s)
 
     assert new.latlon == previous
+  end
+
+  @tag bug: :position_history
+  test "position history stays bounded and keeps the whole flight" do
+    start_supervised!(%{id: Site, start: {Site, :start_link, [[52.0, 4.0], 1000]}})
+
+    # 500 earlier fixes, numbered from the start of the flight, newest first.
+    history = for i <- 499..0//-1, do: {i, [52.0 + i * 0.0001, 3.9, 38000]}
+
+    s =
+      state({0, pos(@even)}, {1_000_000, pos(@odd)}, nil)
+      |> Map.merge(%{position_history: history, position_seq: 500, position_stride: 1})
+
+    {:ok, new} = Aircraft.calculate_position(s)
+
+    assert length(new.position_history) <= 500
+    assert [{500, [_, _, 38000]} | rest] = new.position_history
+    # The recent window is untouched and the first fix of the flight survives.
+    assert Enum.take(rest, 99) == Enum.take(history, 99)
+    assert List.last(new.position_history) == List.last(history)
   end
 
   @tag bug: :position_jump
