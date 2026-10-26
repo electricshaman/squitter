@@ -14,9 +14,17 @@ defmodule Squitter.Mixfile do
       start_permanent: Mix.env() == :prod,
       compilers: [:elixir_make] ++ Mix.compilers(),
       make_clean: ["clean"],
+      elixirc_paths: elixirc_paths(Mix.env()),
+      aliases: aliases(),
       deps: deps()
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  # Starting the application launches dump1090, so tests run without it.
+  defp aliases, do: [test: "test --no-start"]
 
   def application do
     [extra_applications: [:logger], mod: {Squitter.Application, []}]
