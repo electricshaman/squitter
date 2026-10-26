@@ -313,11 +313,9 @@ defmodule Squitter.Decoding.ExtSquitter do
 
   # Private Helpers
 
-  # GNSS height (TC 20-22) is a plain 12-bit value in meters; report feet like baro.
-  defp decode_altitude(:airborne_pos_gnss_height, <<meters::12>>),
-    do: round(meters * 3.28084)
-
-  defp decode_altitude(:airborne_pos_baro_alt, alt_bin) do
+  # GNSS height (TC 20-22) uses the same encoding as barometric altitude, as
+  # readsb decodes it; alt_type still says which kind it is.
+  defp decode_altitude(_alt_type, alt_bin) do
     <<alt_a::7, alt_q::1, alt_b::4>> = alt_bin
 
     if alt_q == 1 do

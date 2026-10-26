@@ -115,10 +115,11 @@ defmodule Squitter.ExtSquitterTest do
   end
 
   @tag bug: :gnss_height
-  test "GNSS height (TC 20-22) is a plain 12-bit value in meters" do
-    # 1000 m = 3280.8 ft. The test assumes the decoder reports feet like baro altitude.
-    msg = position(20, 1000)
-    assert_in_delta msg.type_msg.alt, 3281, 1
+  test "GNSS height (TC 20-22) uses the same encoding as baro altitude" do
+    # As readsb decodes it: Q = 1, 25 ft steps. 1000 ft -> n = 80 -> field 0b000010110000.
+    for tc <- 20..22, do: assert(position(tc, 0b000010110000).type_msg.alt == 1000)
+    # Q = 0 is Gillham, and invalid codes still produce no altitude.
+    assert position(20, gillham_field(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)).type_msg.alt == nil
   end
 
   @tag bug: :utc_time
