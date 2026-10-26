@@ -224,6 +224,9 @@ defmodule Squitter.Decoding.ExtSquitter do
   | 16 | 0                        | 2   | < 8 NM (14.8 km)   |
   | 17 | 0                        | 1   | < 20 NM (37.0 km)  |
   | 18 | 0                        | 0   | > 20 NM or Unknown |
+  | 20 | -                        | 11  | < 7.5 m            |
+  | 21 | -                        | 10  | < 25 m             |
+  | 22 | -                        | 0   | > 25 m or Unknown  |
 
   Source: https://adsb-decode-guide.readthedocs.io/en/latest/content/nicnac.html
   """
@@ -270,6 +273,15 @@ defmodule Squitter.Decoding.ExtSquitter do
           {1, %{limit: 20, unit: :NM}}
 
         %{tc: 18, nic_sb: 0} ->
+          {0, %{limit: :unknown}}
+
+        %{tc: 20} ->
+          {11, %{limit: 7.5, unit: :m}}
+
+        %{tc: 21} ->
+          {10, %{limit: 25, unit: :m}}
+
+        %{tc: 22} ->
           {0, %{limit: :unknown}}
 
         _ ->
