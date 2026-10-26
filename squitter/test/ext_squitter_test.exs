@@ -134,6 +134,21 @@ defmodule Squitter.ExtSquitterTest do
     assert position(22, 0).type_msg.nic == 0
   end
 
+  @tag bug: :non_icao
+  test "DF18 non-ICAO addresses are prefixed so they can't collide with ICAO ones" do
+    me = <<0::56>>
+    assert (me |> Frames.es(df: 18, ca: 1) |> decode()).icao == "~4840D6"
+    assert (me |> Frames.es(df: 18, ca: 5) |> decode()).icao == "~4840D6"
+    assert (me |> Frames.es(df: 18, ca: 0) |> decode()).icao == "4840D6"
+    assert (me |> Frames.es(df: 17) |> decode()).icao == "4840D6"
+  end
+
+  @tag bug: :non_icao
+  test "non-ICAO addresses have no country" do
+    assert Squitter.CountryLookup.get("~4840D6") == ""
+    assert Squitter.CountryLookup.get("4840D6") == "Netherlands"
+  end
+
   @tag bug: :df18_cf
   test "DF18 management and reserved control fields are not decoded as ADS-B" do
     ident_me = <<4::5, 0::3, 20::6, 5::6, 19::6, 20::6, 49::6, 50::6, 51::6, 52::6>>

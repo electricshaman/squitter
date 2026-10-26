@@ -40,6 +40,13 @@ defmodule Squitter.Decoding.ModeS do
     {:ok, address}
   end
 
+  # DF18 CF 1 and 5 carry non-ICAO addresses. Prefix them (readsb's convention)
+  # so they can't collide with a real aircraft's address.
+  def icao_address(<<18::5, cf::3, address::3-bytes, _rest::binary>>, _checksum)
+      when cf in [1, 5] do
+    {:ok, "~" <> to_hex_string(address)}
+  end
+
   def icao_address(<<df::5, _::3, icao::3-bytes, _rest::binary>>, _checksum)
       when df in [11, 17, 18] do
     {:ok, to_hex_string(icao)}

@@ -30,7 +30,8 @@ defmodule Squitter.Aircraft do
 
     schedule_tick()
 
-    send(self(), {:try_master, 1})
+    # Non-ICAO addresses have no registration to look up.
+    unless String.starts_with?(address, "~"), do: send(self(), {:try_master, 1})
 
     {:ok,
      %{
