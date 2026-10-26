@@ -12,8 +12,6 @@ defmodule Squitter.Mixfile do
       elixir: "~> 1.5",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      compilers: [:elixir_make] ++ Mix.compilers(),
-      make_clean: ["clean"],
       elixirc_paths: elixirc_paths(Mix.env()),
       aliases: aliases(),
       deps: deps()
@@ -34,8 +32,7 @@ defmodule Squitter.Mixfile do
     [
       {:gen_stage, "~> 0.11"},
       {:flow, "~> 0.11"},
-      {:poison, "~> 3.1"},
-      {:elixir_make, "~> 0.4", runtime: false}
+      {:poison, "~> 3.1"}
     ]
   end
 end

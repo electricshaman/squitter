@@ -3,7 +3,7 @@ defmodule Squitter.Test.Frames do
   Builders for Mode S test frames. Everything here is implemented independently
   of the code under test so it can serve as a reference.
   """
-  use Bitwise
+  import Bitwise
 
   @cpr_max 131_072
 
@@ -11,8 +11,7 @@ defmodule Squitter.Test.Frames do
   Bitwise CRC-24 (generator 0x1FFF409) over all but the last 24 bits of `frame`.
   """
   def crc(frame) do
-    n = bit_size(frame) - 24
-    <<data::bitstring-size(n), _::24>> = frame
+    data = binary_part(frame, 0, byte_size(frame) - 3)
 
     for <<b::1 <- data>>, reduce: 0 do
       acc ->
@@ -30,9 +29,8 @@ defmodule Squitter.Test.Frames do
   interrogator code for DF11.
   """
   def seal(frame, overlay \\ 0) do
-    n = bit_size(frame) - 24
-    <<data::bitstring-size(n), _::24>> = frame
-    <<data::bitstring, bxor(crc(frame), overlay)::24>>
+    data = binary_part(frame, 0, byte_size(frame) - 3)
+    <<data::binary, bxor(crc(frame), overlay)::24>>
   end
 
   @doc "A 112-bit extended squitter carrying the 56-bit `me` field."
