@@ -64,22 +64,7 @@ defmodule Squitter.Decoding.ExtSquitter do
     <<_::@head, ss::2, nicsb::1, alt_bin::12-bits, t::1, f::1, lat_cpr::17, lon_cpr::17,
       _::binary>> = msg
 
-    <<alt_a::7, alt_q::1, alt_b::4>> = alt_bin
-
-    alt =
-      if alt_q == 1 do
-        <<n::11>> = <<alt_a::7, alt_b::4>>
-        n * 25 - 1000
-      else
-        # TODO: Clean this up somehow
-        <<c1::1, a1::1, c2::1, a2::1, c4::1, a4::1, b1::1, _::1, b2::1, d2::1, b4::1, d4::1>> =
-          alt_bin
-
-        <<n::11>> =
-          <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>>
-
-        ModeS.gillham_altitude(n)
-      end
+    alt = decode_altitude(alt_type, alt_bin)
 
     %AirbornePosition{
       tc: tc,
@@ -304,6 +289,28 @@ defmodule Squitter.Decoding.ExtSquitter do
     do: raw_delta |> unscale(25) |> apply_sign(sign)
 
   # Private Helpers
+
+  # GNSS height (TC 20-22) is a plain 12-bit value in meters; report feet like baro.
+  defp decode_altitude(:airborne_pos_gnss_height, <<meters::12>>),
+    do: round(meters * 3.28084)
+
+  defp decode_altitude(:airborne_pos_baro_alt, alt_bin) do
+    <<alt_a::7, alt_q::1, alt_b::4>> = alt_bin
+
+    if alt_q == 1 do
+      <<n::11>> = <<alt_a::7, alt_b::4>>
+      n * 25 - 1000
+    else
+      # TODO: Clean this up somehow
+      <<c1::1, a1::1, c2::1, a2::1, c4::1, a4::1, b1::1, _::1, b2::1, d2::1, b4::1, d4::1>> =
+        alt_bin
+
+      <<n::11>> =
+        <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>>
+
+      ModeS.gillham_altitude(n)
+    end
+  end
 
   # Velocity fields encode "not available" as 0 and a value v as v / lsb + 1.
   defp unscale(0, _lsb), do: nil
