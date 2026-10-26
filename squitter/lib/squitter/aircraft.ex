@@ -305,8 +305,10 @@ defmodule Squitter.Aircraft do
       {:ok, %{state | latlon: latlon, distance: distance, position_history: pos_history}}
     else
       {:error, :air_pos_time_delta} ->
-        # More than X seconds between messages, clear the oldest one and bail out.
-        {:ok, %{state | last_even_position: nil, last_odd_position: nil}}
+        # Too long between messages: drop the older one so the newer can pair with the next.
+        if fflag?,
+          do: {:ok, %{state | last_even_position: nil}},
+          else: {:ok, %{state | last_odd_position: nil}}
 
       {:error, {:air_pos_dist, position, dist}} ->
         Logger.warn(

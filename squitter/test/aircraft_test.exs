@@ -31,6 +31,12 @@ defmodule Squitter.AircraftTest do
 
     assert new.last_even_position == nil
     assert new.last_odd_position == odd
+
+    even = {6_000_000, pos(@even)}
+    {:ok, new} = Aircraft.calculate_position(state(even, {0, pos(@odd)}, nil))
+
+    assert new.last_even_position == even
+    assert new.last_odd_position == nil
   end
 
   @tag bug: :position_jump
