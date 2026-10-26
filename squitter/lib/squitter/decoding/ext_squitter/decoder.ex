@@ -195,15 +195,18 @@ defmodule Squitter.Decoding.ExtSquitter do
   def calculate_vector(sign_ew, sign_ns, v_ew, v_ns, sub) do
     import :math
 
-    vel_ew = apply_sign(v_ew - 1, sign_ew) * if sub == 2, do: 4, else: 1
-    vel_ns = apply_sign(v_ns - 1, sign_ns) * if sub == 2, do: 4, else: 1
+    lsb = if sub == 2, do: 4, else: 1
+    vel_ew = v_ew |> unscale(lsb) |> apply_sign(sign_ew)
+    vel_ns = v_ns |> unscale(lsb) |> apply_sign(sign_ns)
 
-    v = sqrt(pow(vel_ew, 2) + pow(vel_ns, 2) + 0.5)
-    h = atan2(vel_ew, vel_ns) * 180.0 / pi() + 0.5
+    if is_nil(vel_ew) or is_nil(vel_ns) do
+      {nil, nil}
+    else
+      v = sqrt(pow(vel_ew, 2) + pow(vel_ns, 2))
+      h = atan2(vel_ew, vel_ns) * 180.0 / pi()
 
-    h = if h < 0, do: h + 360, else: h
-
-    {trunc(v), trunc(h)}
+      {round(v), rem(round(h) + 360, 360)}
+    end
   end
 
   @doc """

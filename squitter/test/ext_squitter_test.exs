@@ -101,6 +101,12 @@ defmodule Squitter.ExtSquitterTest do
     assert msg.type_msg.velocity_kt == 117
   end
 
+  test "ground track just west of north wraps to 0, not 360" do
+    # 1 kt west, 150 kt north: track -0.38 deg
+    msg = Frames.ground_speed_me(1, 1, 2, 0, 151) |> Frames.es() |> decode()
+    assert msg.type_msg.heading == 0
+  end
+
   @tag bug: :gnss_height
   test "GNSS height (TC 20-22) is a plain 12-bit value in meters" do
     # 1000 m = 3280.8 ft. The test assumes the decoder reports feet like baro altitude.
