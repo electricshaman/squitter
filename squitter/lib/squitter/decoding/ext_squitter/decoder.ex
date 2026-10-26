@@ -209,14 +209,8 @@ defmodule Squitter.Decoding.ExtSquitter do
   @doc """
   Decode vertical rate.
   """
-  def vert_rate(0, _sign),
-    do: nil
-
-  def vert_rate(1, _sign),
-    do: 0
-
   def vert_rate(raw_vr, sign),
-    do: apply_sign(raw_vr * 64, sign)
+    do: raw_vr |> unscale(64) |> apply_sign(sign)
 
   @doc """
   Decode vertical rate source.
@@ -304,16 +298,16 @@ defmodule Squitter.Decoding.ExtSquitter do
   If the result is negative, geometric altitude is below barometric altitude.
   If the result is nil, no delta information is available.
   """
-  def geo_delta(0, _sign),
-    do: nil
-
-  def geo_delta(1, _sign),
-    do: 0
-
   def geo_delta(raw_delta, sign),
-    do: apply_sign(raw_delta * 25, sign)
+    do: raw_delta |> unscale(25) |> apply_sign(sign)
 
   # Private Helpers
+
+  # Velocity fields encode "not available" as 0 and a value v as v / lsb + 1.
+  defp unscale(0, _lsb), do: nil
+  defp unscale(raw, lsb), do: (raw - 1) * lsb
+
+  defp apply_sign(nil, _sign), do: nil
 
   defp apply_sign(value, sign) do
     # When the sign bit is 1, the value is negative.
