@@ -14,6 +14,22 @@ defmodule Squitter.DownlinkFormatTest do
   end
 
   @tag bug: :df19
+  test "corrupted DF19 with AF = 0 fails its CRC" do
+    <<head::bitstring-size(60), b::1, tail::bitstring>> =
+      Frames.seal(<<19::5, 0::3, @address::24, 0::56, 0::24>>)
+
+    assert Decoding.decode(0, <<head::bitstring, 1 - b::1, tail::bitstring>>).crc == :invalid
+  end
+
+  @tag bug: :df19
+  test "DF22 and DF19 with AF != 0 have no known address" do
+    for {df, af} <- [{22, 0}, {19, 1}] do
+      decoded = Decoding.decode(0, Frames.seal(<<df::5, af::3, @address::24, 0::56, 0::24>>))
+      assert %{icao: nil, crc: :unverified} = decoded
+    end
+  end
+
+  @tag bug: :df19
   test "malformed 56-bit DF19 and DF22 frames do not raise" do
     for df <- [19, 22] do
       Decoding.decode(0, <<df::5, 0::51>>)

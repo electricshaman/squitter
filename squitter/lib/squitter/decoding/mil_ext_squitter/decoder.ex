@@ -3,13 +3,23 @@ defmodule Squitter.Decoding.MilExtSquitter do
 
   @df [19, 22]
 
-  defstruct [:df, :msg, :pi, :parity, :checksum, :crc, :icao, :time]
+  defstruct [:df, :msg, :pi, :checksum, :crc, :icao, :time]
 
-  def decode(time, <<df::5, _payload::27-bits, pi::24-unsigned>> = msg) when df in @df do
-    # TODO: Confirm if this DF is actually 56 or 112 bits
-    checksum = ModeS.checksum(msg, 56)
-    {:ok, icao} = ModeS.icao_address(msg, checksum)
-    parity = ModeS.parity(pi, icao)
+  def decode(time, <<df::5, af::3, _::80, pi::24-unsigned>> = msg) when df in @df do
+    checksum = ModeS.checksum(msg, 112)
+
+    # DF19 with AF = 0 is laid out like DF17: plain address and a full CRC.
+    # Other AF values and DF22 are military formats with no public spec, so
+    # neither the address nor the parity scheme is known.
+    {icao, crc} =
+      case {df, af} do
+        {19, 0} ->
+          {:ok, icao} = ModeS.icao_address(msg, checksum)
+          {icao, if(checksum == pi, do: :valid, else: :invalid)}
+
+        _ ->
+          {nil, :unverified}
+      end
 
     StatsTracker.count({:df, df, :decoded})
 
@@ -17,9 +27,8 @@ defmodule Squitter.Decoding.MilExtSquitter do
       df: df,
       icao: icao,
       pi: pi,
-      parity: parity,
       checksum: checksum,
-      crc: if(checksum == parity, do: :valid, else: :invalid),
+      crc: crc,
       time: time,
       msg: msg
     }

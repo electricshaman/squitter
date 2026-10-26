@@ -45,6 +45,10 @@ defmodule Squitter.Decoding.ModeS do
     {:ok, to_hex_string(icao)}
   end
 
+  def icao_address(<<19::5, 0::3, icao::3-bytes, _rest::binary>>, _checksum) do
+    {:ok, to_hex_string(icao)}
+  end
+
   def icao_address(_msg, _checksum) do
     :error
   end
@@ -59,7 +63,7 @@ defmodule Squitter.Decoding.ModeS do
     icao_address(msg, checksum)
   end
 
-  def icao_address(<<df::5, _rest::bits>> = msg) when df in [11, 17, 18] do
+  def icao_address(<<df::5, _rest::bits>> = msg) when df in [11, 17, 18, 19] do
     icao_address(msg, nil)
   end
 
