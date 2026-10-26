@@ -56,9 +56,16 @@ defmodule Squitter.ExtSquitterTest do
 
   @tag bug: :gillham_invalid
   test "invalid Gillham codes produce no altitude" do
-    # A1 set with all C bits clear: the 100 ft code 000 is not a valid Gillham value.
-    alt = gillham_field(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)
-    assert position(11, alt).type_msg.alt == nil
+    for n <- 0..2047 do
+      <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>> = <<n::11>>
+      alt = gillham_field(d2, d4, a1, a2, a4, b1, b2, b4, c1, c2, c4)
+      decoded = position(11, alt).type_msg.alt
+
+      case Frames.gillham_ref(d2, d4, a1, a2, a4, b1, b2, b4, c1, c2, c4) do
+        :invalid -> assert decoded == nil, "code #{n} decoded as #{inspect(decoded)}"
+        expected -> assert decoded == expected, "code #{n}"
+      end
+    end
   end
 
   @tag bug: :velocity_offset

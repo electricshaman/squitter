@@ -305,10 +305,15 @@ defmodule Squitter.Decoding.ExtSquitter do
       <<c1::1, a1::1, c2::1, a2::1, c4::1, a4::1, b1::1, _::1, b2::1, d2::1, b4::1, d4::1>> =
         alt_bin
 
-      <<n::11>> =
-        <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>>
+      # Only five 100 ft codes are valid. All-zero also means "not available".
+      if {c1, c2, c4} in [{0, 0, 0}, {1, 0, 1}, {1, 1, 1}] do
+        nil
+      else
+        <<n::11>> =
+          <<d2::1, d4::1, a1::1, a2::1, a4::1, b1::1, b2::1, b4::1, c1::1, c2::1, c4::1>>
 
-      ModeS.gillham_altitude(n)
+        ModeS.gillham_altitude(n)
+      end
     end
   end
 

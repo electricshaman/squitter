@@ -86,7 +86,11 @@ defmodule Squitter.Aircraft do
          state
        )
        when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] and band(flag, 1) == 0 do
-    calculate_position(%{state | altitude: alt, last_even_position: {time, pos}})
+    calculate_position(%{
+      state
+      | altitude: alt || state.altitude,
+        last_even_position: {time, pos}
+    })
   end
 
   # position with odd flag
@@ -95,7 +99,7 @@ defmodule Squitter.Aircraft do
          state
        )
        when alt_type in [:airborne_pos_baro_alt, :airborne_pos_gnss_height] and band(flag, 1) == 1 do
-    calculate_position(%{state | altitude: alt, last_odd_position: {time, pos}})
+    calculate_position(%{state | altitude: alt || state.altitude, last_odd_position: {time, pos}})
   end
 
   defp handle_msg(%{tc: :no_position_info}, state) do
