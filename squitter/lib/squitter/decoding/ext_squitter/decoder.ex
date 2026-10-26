@@ -175,7 +175,7 @@ defmodule Squitter.Decoding.ExtSquitter do
       intent_change: ic == 1,
       nac: nac,
       heading: heading,
-      velocity_kt: as,
+      velocity_kt: unscale(as, if(sub == 4, do: 4, else: 1)),
       airspeed_type: if(as_t == 1, do: :true_speed, else: :indicated_speed),
       vert_rate: vert_rate(vr, s_vr),
       vert_rate_src: vert_rate_source(vrsrc),
