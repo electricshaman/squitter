@@ -6,7 +6,7 @@ defmodule Squitter.Aircraft do
   use Bitwise
   import Squitter.Utils.Math
 
-  alias Squitter.{MasterLookup, Site, Decoding.CPR, StateReport, StatsTracker}
+  alias Squitter.{MasterLookup, Site, Decoding.CPR, StateReport}
   alias Squitter.Decoding.ExtSquitter.{GroundSpeed, AirSpeed}
 
   @air_pos_time_delta_max_s 5.0
@@ -71,12 +71,6 @@ defmodule Squitter.Aircraft do
       {:error, _} ->
         {:noreply, state}
     end
-  end
-
-  defp handle_msg(%{df: df, crc: :invalid}, _state) do
-    # Ignore messages with invalid CRC
-    StatsTracker.count([:crc_failed, :df, df])
-    {:error, :invalid_crc}
   end
 
   defp handle_msg(
@@ -312,9 +306,7 @@ defmodule Squitter.Aircraft do
 
       {:error, {:air_pos_dist, position, dist}} ->
         Logger.warn(
-          "[#{state.address}:#{state.callsign}] Skipping current position #{inspect(position)}: over #{
-            @air_pos_dist_delta_max_nm
-          } NM from last position of #{inspect(state.latlon)} (#{dist} NM)"
+          "[#{state.address}:#{state.callsign}] Skipping current position #{inspect(position)}: over #{@air_pos_dist_delta_max_nm} NM from last position of #{inspect(state.latlon)} (#{dist} NM)"
         )
 
         {:ok, state}
